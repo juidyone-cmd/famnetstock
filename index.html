@@ -433,14 +433,14 @@ function bindSync(){
 const months = () => Object.keys(S.months).sort();
 const saved = loadUI();
 const UI = {
-  tab: ['dash','month','trend','entry','upload','master','check'].includes(saved.tab) ? saved.tab : 'dash',
+  tab: ['live','dash','month','trend','entry','upload','master','check'].includes(saved.tab) ? saved.tab : 'live',
   month: null, mode: saved.mode === 'today' ? 'today' : 'month',
   fCat: '', fSt: '', q: '', sort: {k:'idx', dir:1}, prio: 'risk',
   tCat: '', tKey: '', E: null, confirm: '',
   U: null, UP: {month: null, field: 'zb', dates: 'fill', zero: false, newCat: '미분류'}
 };
 UI.month = (saved.month && S.months[saved.month]) ? saved.month : months().slice(-1)[0];
-try { const h = location.hash.replace('#',''); if (['dash','month','trend','entry','upload','master','check'].includes(h)) UI.tab = h; } catch(e){}
+try { const h = location.hash.replace('#',''); if (['live','dash','month','trend','entry','upload','master','check'].includes(h)) UI.tab = h; } catch(e){}
 
 /* ---------- 계산 ---------- */
 const baseOf = m => UI.mode === 'today' ? todayStr() : (S.months[m]?.base || `${m}-10`);
@@ -595,7 +595,7 @@ function spark(vals, color){
 }
 
 /* ---------- 헤더·탭 ---------- */
-const TABS = [['dash','대시보드'],['month','월간 재고'],['trend','품목별 추이'],['entry','재고 입력'],['upload','엑셀 업로드'],['master','기준정보'],['check','점검·기록']];
+const TABS = [['live','실시간 재고'],['dash','대시보드'],['month','월간 재고'],['trend','품목별 추이'],['entry','재고 입력'],['master','기준정보'],['check','점검·기록']];
 function renderTabs(){
   $('#tabs').innerHTML = TABS.map(([k,l]) => `<button class="tab" role="tab" id="tab-${k}" aria-selected="${UI.tab===k}" data-tab="${k}">${l}</button>`).join('');
 }
@@ -608,7 +608,7 @@ function renderConn(){
     : st === 'saving' ? `<span class="dotc sync"></span><b>공유 저장 중…</b>`
     : st === 'view' ? `<span class="dotc on"></span><b>공유 재고 보기</b> · ${hm(SYNC.at)} 최신 확인${SY.dirty ? ' · 이 PC에서 고친 내용은 공유되지 않음' : ''}`
     : st === 'error' ? `<span class="dotc err"></span><b>${esc(SYNC.msg || '공유 저장 실패')}</b> · 이 브라우저에는 저장됨`
-    : storeOK ? `<span class="dotc on"></span><b>이 브라우저에 저장</b> · ${months().length}개월 · ${t}`
+    : storeOK ? `<span class="dotc on"></span><b>이 브라우저에 저장</b> · ${months().length}개월 · ${t} · <a href="#check" data-tab="check" style="color:var(--brand);font-weight:600">공유 설정</a>`
     : `<span class="dotc off"></span><b>임시 저장</b> · 이 환경에서는 저장되지 않아 새로고침하면 초기화됩니다`;
   const now = new Date(), y = now.getFullYear(), mo = now.getMonth()+1, d3 = thirdMonday(y, mo);
   const isPast = now.getDate() > d3, isToday = now.getDate() === d3;
@@ -621,7 +621,13 @@ function monthBar(extra=''){
     <div class="field"><label for="selMonth">관리월</label><select id="selMonth" style="min-width:140px">${opts}</select></div>
     <div class="field"><span class="lbl">잔여일 기준일</span>
       <div class="seg" role="group" aria-label="기준일 방식"><button data-mode="month" aria-pressed="${UI.mode==='month'}">월 기준일 ${dot(S.months[UI.month].base).slice(5)}</button><button data-mode="today" aria-pressed="${UI.mode==='today'}">오늘 ${dot(todayStr()).slice(5)}</button></div></div>
+    <span class="muted" style="align-self:flex-end;padding-bottom:10px">${monthNote(UI.month)}</span>
     <span class="sp"></span>${extra}</div>`;
+}
+function monthNote(m){ // 월별 자료가 어느 파일 기준인지
+  const sr = S.months[m] && S.months[m].src, live = liveInfo().month === m;
+  if (!sr) return live ? '' : '수기 입력 자료';
+  return live ? `이지어드민 ${dot(sr.date)} 기준 · 이번 달은 올릴 때마다 갱신` : `월말 기준 · 이지어드민 ${dot(sr.date)} 마지막 파일`;
 }
 
 /* ---------- 대시보드 ---------- */
@@ -784,6 +790,66 @@ function viewMonth(){
     };
     $('#btnNewRow').onclick = () => { newEntry(); setTab('entry'); };
     $('#btnNewMonth').onclick = () => { const t = $('#selNew').value; if (t) createMonth(t); };
+  }};
+}
+function liveInfo(){ // 지금 '실시간'으로 볼 자료: 마지막으로 올린 파일의 월 (아직 없으면 가장 최근 월간 자료)
+  const L = S.live;
+  if (L && S.months[L.month]) return {month: L.month, date: L.date, time: L.time || '', file: L.file, prev: L.prev || null, up: true};
+  const m = months().filter(x => rowsOf(x).some(r => r.zb != null)).pop() || months().pop();
+  const sr = S.months[m] && S.months[m].src;
+  return {month: m, date: sr ? sr.date : (S.months[m] && S.months[m].base) || `${m}-10`, time: sr ? sr.time : '', file: '', prev: null, up: false};
+}
+function ago(date, time){
+  const t = Date.parse(`${date}T${time || '00:00'}:00`); if (isNaN(t)) return '';
+  const mn = Math.max(0, Math.round((Date.now() - t) / 60000));
+  return mn < 2 ? '방금' : mn < 60 ? `${mn}분 전` : mn < 1440 ? `${Math.floor(mn / 60)}시간 전` : `${Math.floor(mn / 1440)}일 전`;
+}
+function viewLive(){
+  const I = liveInfo(), m = I.month, base = todayStr(), sm = monthSummary(m, base), pv = I.prev && I.prev.vals;
+  sm.list.forEach(e => { const k = sq(e.r.name); e.ld = pv && e.r.zb != null && k in pv ? (+e.r.zb) - pv[k] : null; });
+  const dSum = pv ? sm.list.reduce((a, e) => a + (e.ld || 0), 0) : null;
+  const risk = sm.list.filter(e => e.st === '위험' || e.st === '만료').length, none = sm.list.filter(e => e.st === '재고없음').length;
+  const stale = I.up ? dayDiff(I.date, base) : null;
+  let list = sm.list.filter(e => (!UI.fCat || e.r.cat === UI.fCat) && (!UI.fSt || e.st === UI.fSt) && (!UI.q || e.r.name.toLowerCase().includes(UI.q.toLowerCase())));
+  const k = UI.sort.k, dir = UI.sort.dir;
+  const val = e => ({idx:e.i, st:STATUS.indexOf(e.st), cat:e.r.cat, name:e.r.name, tot:e.tot, zb:+e.r.zb||0, biz:+e.r.biz||0, exp:e.r.exp||'9999', days:e.days ?? 1e9, delta:e.ld ?? -1e9}[k]);
+  list = [...list].sort((a, b) => { const x = val(a), y = val(b); return (x > y ? 1 : x < y ? -1 : 0) * dir; });
+  const catOpts = ['<option value="">전체 구분</option>'].concat([...new Set(rowsOf(m).map(r => r.cat))].map(c => `<option ${c === UI.fCat ? 'selected' : ''}>${esc(c)}</option>`)).join('');
+  const stOpts = ['<option value="">전체 상태</option>'].concat(STATUS.concat(['미입력']).map(s => `<option value="${s}" ${s === UI.fSt ? 'selected' : ''}>${s === '미입력' ? '기한 미입력' : s}</option>`)).join('');
+  const th = (key, label, cls = '') => `<th class="sortable ${cls}" data-sort="${key}" aria-sort="${UI.sort.k === key ? (UI.sort.dir > 0 ? 'ascending' : 'descending') : 'none'}">${label}${UI.sort.k === key ? (UI.sort.dir > 0 ? ' ▲' : ' ▼') : ''}</th>`;
+  const body = list.map(e => `<tr class="${e.st === '재고없음' ? 'dim' : ''}"><td>${pill(e.st)}</td><td>${esc(e.r.cat)}</td><td class="nm">${esc(e.r.name)}</td>
+      <td class="r num"><b>${fmt(e.r.zb)}</b></td><td class="r num delta">${e.ld === null || e.ld === 0 ? '–' : `${arrow(e.ld)} ${fmt(Math.abs(e.ld))}`}</td>
+      <td class="r num">${fmt(e.r.biz)}</td><td class="r num">${fmt(e.tot)}</td><td class="num">${dot(e.r.exp)}</td>
+      <td class="r num" style="${e.st === '위험' || e.st === '만료' ? 'font-weight:700;color:var(--danger-fg)' : ''}">${e.days === null ? '–' : e.days}</td></tr>`).join('');
+  const sZb = list.reduce((a, e) => a + (+e.r.zb || 0), 0), sBiz = list.reduce((a, e) => a + (+e.r.biz || 0), 0), sTot = list.reduce((a, e) => a + (e.tot || 0), 0);
+  const stamp = `${dot(I.date)}${I.time ? ' ' + I.time : ''}`, pvLabel = I.prev ? `${dot(I.prev.date).slice(5)}${I.prev.time ? ' ' + I.prev.time : ''}` : '';
+  const html = `<div class="card" style="margin-bottom:16px"><div class="sec-title"><h2>실시간 재고</h2>
+      <span class="muted">${I.up ? `이지어드민 ${stamp} 기준 · ${ago(I.date, I.time)} 내려받은 파일` : `월간 자료(${mLabel(m)}) 기준 · 아직 엑셀을 올리지 않았습니다`}</span></div>
+    <p class="sub" style="margin:2px 0 0">가장 최근에 올린 재고 파일 기준입니다. 소비기한 잔여일은 오늘(${dot(base).slice(5)})부터 계산합니다. 월별 자료는 '월간 재고'에서 매달 마지막 파일 기준으로 확인합니다.</p>
+    ${stale !== null && stale >= 2 ? `<div class="note w" style="margin-top:10px">마지막 업로드가 ${stale}일 전입니다. 최신 파일을 올려 주세요.</div>` : ''}
+    ${!I.up ? `<div class="note" style="margin-top:10px">오른쪽 위 <b>재고 엑셀 올리기</b>로 이지어드민 파일을 올리면 이 화면이 최신 재고로 바뀝니다.</div>` : ''}</div>
+  <div class="grid g4" style="margin-bottom:16px">
+    <div class="card kpi"><div class="k">총 보유재고</div><div class="v num">${fmt(sm.tot)}</div><div class="d num">지브레인 ${fmt(sm.zb)} · 사업단 ${fmt(sm.biz)}</div></div>
+    <div class="card kpi"><div class="k">지브레인 재고</div><div class="v num">${fmt(sm.zb)}</div><div class="d">${dSum === null ? '비교할 이전 자료 없음' : `${pvLabel} 대비 <b class="num">${dSum === 0 ? '변동 없음' : `${arrow(dSum)} ${fmt(Math.abs(dSum))}`}</b>`}</div></div>
+    <div class="card kpi"><div class="k">우선 조치 대상</div><div class="v num" style="color:${risk ? 'var(--danger-fg)' : 'var(--ink)'}">${risk}<span style="font-size:15px;font-weight:600;color:var(--muted)"> 개</span></div><div class="d">소비기한 위험·만료 (오늘 기준)</div></div>
+    <div class="card kpi"><div class="k">재고 없음</div><div class="v num">${none}<span style="font-size:15px;font-weight:600;color:var(--muted)"> 개</span></div><div class="d">관리 품목 ${sm.list.length}개 중</div></div>
+  </div>
+  <div class="card"><div class="bar" style="margin-bottom:12px">
+      <div class="field"><label for="fCat">구분</label><select id="fCat">${catOpts}</select></div>
+      <div class="field"><label for="fSt">관리상태</label><select id="fSt">${stOpts}</select></div>
+      <div class="field" style="flex:1;min-width:180px"><label for="fq">검색 <em>상품명</em></label><input type="text" id="fq" value="${esc(UI.q)}" placeholder="예: 키위, 삼계탕"></div>
+      <span class="sp"></span><button class="btn" id="btnLiveCopy">표 복사 (엑셀 붙여넣기)</button></div>
+    <div class="tw" style="max-height:640px"><table>
+      <thead><tr>${th('st', '관리상태')}${th('cat', '구분')}${th('name', '상품명')}${th('zb', '지브레인 재고', 'r')}${th('delta', I.prev ? `${pvLabel} 대비` : '직전 대비', 'r')}${th('biz', '사업단', 'r')}${th('tot', '총 보유재고', 'r')}${th('exp', '소비기한')}${th('days', '잔여일', 'r')}</tr></thead>
+      <tbody>${body || '<tr><td colspan="9" class="empty">조건에 맞는 품목이 없습니다.</td></tr>'}</tbody>
+      <tfoot><tr><td colspan="3">${UI.fCat || UI.fSt || UI.q ? '조회 결과 합계' : '전체 재고 합계'}</td><td class="r num">${fmt(sZb)}</td><td></td><td class="r num">${fmt(sBiz)}</td><td class="r num">${fmt(sTot)}</td><td colspan="2"></td></tr></tfoot>
+    </table></div>
+    <div class="legend"><span class="muted">지브레인 재고는 이지어드민 파일, 사업단 재고는 ${mLabel(m)} 월간 자료(직접 입력) 값입니다.</span></div></div>`;
+  return {html, after(){
+    $('#btnLiveCopy').onclick = () => {
+      const head = ['관리상태','구분','상품명','지브레인 재고','직전 업로드 대비','사업단 재고','총 보유재고','소비기한','잔여일'];
+      copyText([head.join('\t')].concat(list.map(e => [e.st, e.r.cat, e.r.name, e.r.zb ?? '', e.ld ?? '', e.r.biz ?? '', e.tot ?? '', e.r.exp || '', e.days ?? ''].join('\t'))).join('\n'), `${list.length}개 행을 복사했습니다. 엑셀에 붙여넣으세요`);
+    };
   }};
 }
 function ensureMonth(t){ // 월 탭이 없으면 직전 달 품목을 복사해 만든다 (화면 갱신 없음)
@@ -1088,7 +1154,7 @@ function viewCheck(){
       </ul></div>
     <div class="card"><h2>변경 기록</h2><p class="sub">이 브라우저에서 저장·삭제한 내용을 최근 순으로 보여 줍니다.</p>${log}</div>
    </div></div>`;
-  return {html, after(){}};
+  return {html: html + syncCard(), after(){ bindSync(); }};
 }
 
 /* ---------- 엑셀 업로드 (3PL 재고 파일 → 월간 재고 자동 정리) ---------- */
@@ -1337,7 +1403,7 @@ async function quickUpload(file){
   if (!P.items.some(x => x.kind !== 'skip')) return toDetail('월간 표와 연결되는 상품을 찾지 못했습니다. 연결을 직접 골라 주세요');
   applyPlan(U, O, P, true);
   UI.U = U; UI.UP = O; UI.month = m; UI.E = null;
-  save(); saveUI(); setTab('dash');
+  save(); saveUI(); setTab('live');
   const L = S.lastImport;
   toast(SYNC.remote && !SY.token ? '이 기기는 공유 저장이 꺼져 있어 이 화면에만 반영됐습니다. 엑셀 올리는 PC에서 공유 저장을 켜 주세요'
     : `${dot(U.stamp.date)} ${U.stamp.time} 재고 반영 완료 · 변경 ${L.sum.chg}${L.pending.length ? ` · 새 상품 ${L.pending.length}개 확인` : ''}`);
@@ -1362,8 +1428,19 @@ function applyUpload(){
 function applyPlan(U, O, P, quick){
   const m = O.month, f = O.field, existed = !!S.months[m];
   const cp = o => o == null ? null : JSON.parse(JSON.stringify(o));
+  const stp = U.stamp || {date: todayStr(), time: ''}, key = x => `${x.date} ${x.time || '00:00'}`;
+  // 실시간 재고: 지금까지 올린 파일 중 가장 최신 파일. 직전 값은 '직전 업로드 대비' 비교용으로 남긴다
+  const liveNew = f === 'zb' && (!S.live || !S.months[S.live.month] || key(stp) > key(S.live)); let prevSnap = null;
+  if (liveNew){
+    const hasL = S.live && S.months[S.live.month], pmm = hasL ? S.live.month : months().filter(x => x !== m && rowsOf(x).some(r => r.zb != null)).pop();
+    if (pmm){
+      const vals = {}; rowsOf(pmm).forEach(r => { const k = sq(r.name); if (k && r.zb != null && !(k in vals)) vals[k] = +r.zb; });
+      const sr = S.months[pmm].src;
+      prevSnap = {month: pmm, date: hasL ? S.live.date : (sr ? sr.date : S.months[pmm].base), time: hasL ? S.live.time : (sr ? sr.time : ''), vals};
+    }
+  }
   const undo = {month: m, created: !existed, rows: existed ? cp(S.months[m].rows) : null, base: existed ? S.months[m].base : null, src: existed ? cp(S.months[m].src) : null,
-    master: cp(S.master), codes: cp(S.codes || {}), nextId: S.nextId, lastImport: cp(S.lastImport),
+    master: cp(S.master), codes: cp(S.codes || {}), nextId: S.nextId, lastImport: cp(S.lastImport), live: cp(S.live),
     t: new Date().toISOString(), file: U.fileName, field: f, sum: {}};
   ensureMonth(m);
   const rows = rowsOf(m), byKey = new Map();
@@ -1399,7 +1476,8 @@ function applyPlan(U, O, P, quick){
   P.items.forEach(x => { if (x.kind !== 'skip') S.codes[x.a.code || 'n:' + x.a.nk] = x.kind === 'new' ? x.a.nk : x.t; });
   const st = U.stamp || {date: todayStr(), time: ''};
   S.months[m].src = {date: st.date, time: st.time, file: U.fileName};
-  if (quick && st.date.slice(0, 7) === m) S.months[m].base = st.date; // 잔여일 기준일 = 재고를 내려받은 날
+  if (st.date.slice(0, 7) === m) S.months[m].base = st.date; // 월 기준일 = 그 달에 마지막으로 반영한 파일의 날짜
+  if (liveNew) S.live = {month: m, date: st.date, time: st.time, file: U.fileName, prev: prevSnap};
   // 월간 표에 없는 새 상품은 반영 후 한 번만 묻는다 (재고가 있는 것만)
   const pending = quick ? P.items.filter(x => x.kind === 'skip' && x.auto === 'none' && x.a.qty > 0).map(x => {
     let nm = cleanName(x.a.name);
@@ -1437,7 +1515,7 @@ function undoUpload(){
   const u = S.undo; if (!u) return;
   if (u.created) delete S.months[u.month];
   else if (u.rows && S.months[u.month]){ const M = S.months[u.month]; M.rows = u.rows; if (u.base) M.base = u.base; if (u.src) M.src = u.src; else delete M.src; }
-  S.master = u.master; S.nextId = u.nextId; S.codes = u.codes || {}; S.lastImport = u.lastImport || null;
+  S.master = u.master; S.nextId = u.nextId; S.codes = u.codes || {}; S.lastImport = u.lastImport || null; S.live = u.live || null;
   logAdd(u.month, '엑셀 업로드', '반영 되돌리기', `${u.file} 반영 전 상태로 복원`);
   if (!S.months[UI.month]) UI.month = months().slice(-1)[0];
   S.undo = null; UI.E = null; save(); saveUI(); render(); toast('반영 전 상태로 되돌렸습니다');
@@ -1453,14 +1531,14 @@ function viewUpload(){
   const undoCard = u ? `<div class="card" style="margin-top:16px"><div class="bar" style="margin:0"><div><h2>직전 엑셀 반영</h2>
       <p class="sub" style="margin:0">${mLabel(u.month)}${u.created?' (새 월 탭)':''} · ${esc(u.file)} · ${u.field==='biz'?'사업단':'지브레인'} 재고 · 변경 ${u.sum.chg} · 동일 ${u.sum.same} · 신규 ${u.sum.add}${u.sum.zero?` · 0 처리 ${u.sum.zero}`:''}${u.sum.neg?` · 마이너스→0 ${u.sum.neg}`:''} · ${new Date(u.t).getMonth()+1}/${new Date(u.t).getDate()} ${pad(new Date(u.t).getHours())}:${pad(new Date(u.t).getMinutes())}</p></div>
       <span class="sp"></span><button class="btn" id="uShow">월간 재고에서 보기</button><button class="btn warn" id="uUndo">반영 되돌리기</button></div></div>` : '';
-  const head = `<div class="card" style="margin-bottom:16px"><h2>1. 반영 대상과 파일</h2>
+  const head = `<div class="card" style="margin-bottom:16px"><div class="bar" style="margin:0 0 4px"><h2 style="margin:0">1. 반영 대상과 파일</h2><span class="sp"></span><button class="btn" data-tab="live">닫기</button></div>
     <p class="sub">평소에는 화면 오른쪽 위 <b>재고 엑셀 올리기</b>만 누르면 파일 날짜의 월에 바로 반영됩니다. 이 화면은 연결을 직접 확인·수정하거나 다른 월에 반영할 때 씁니다.</p>
     <div class="fgrid">
       <div class="field"><label for="uMonth">반영할 월</label><select id="uMonth">${mOpts.map(o => `<option value="${o.v}" ${o.v===O.month?'selected':''}>${esc(o.l)}</option>`).join('')}</select></div>
       <div class="field"><span class="lbl">엑셀 수량을 넣을 칸</span><div class="radio"><label><input type="radio" name="ufield" value="zb" ${O.field==='zb'?'checked':''}>지브레인 재고</label><label><input type="radio" name="ufield" value="biz" ${O.field==='biz'?'checked':''}>사업단 재고</label></div></div>
     </div>
     <label class="drop" id="uDrop" for="uFile" style="margin-top:14px"><b>${U?'다른 엑셀 파일 선택':'엑셀 파일을 끌어다 놓거나 눌러서 선택'}</b><span>${U?`현재 파일: ${esc(U.fileName)}`:'.xlsx · .xls · .csv'}</span><input type="file" id="uFile" class="sr" accept=".xlsx,.xls,.csv,.txt"></label></div>`;
-  if (!U) return {html: head + undoCard + syncCard(), after: bindUpload};
+  if (!U) return {html: head + undoCard, after: bindUpload};
 
   const aoa = upAoa(U), hdrRow = aoa[U.hdr] || [];
   const ncol = Math.max(hdrRow.length, ...aoa.slice(U.hdr + 1, U.hdr + 40).map(r => r.length), 0);
@@ -1477,7 +1555,7 @@ function viewUpload(){
     ${U.map.exp < 0 && U.map.name >= 0 ? `<div class="note" style="margin-top:12px">소비기한 열이 없거나 날짜가 아니어서, 상품명 안의 [27.07.20] · (27.04.21) 표기를 소비기한으로 읽습니다.</div>` : ''}
     ${extraQty.length ? `<div class="note w" style="margin-top:12px">수량으로 쓸 수 있는 열이 더 있습니다: ${esc(extraQty.join(', '))}. 지금 선택한 열이 맞는지 확인하세요.</div>` : ''}
     <details class="raw"><summary>엑셀 앞부분 보기 (머리글 행 확인용)</summary><div class="tw" style="margin-top:8px"><table class="raw"><tbody>${rawRows}</tbody></table></div></details></div>`;
-  if (U.map.name < 0 || U.map.qty < 0) return {html: head + step2 + `<div class="note w">상품명 열과 수량 열을 선택하면 미리보기가 나타납니다.</div>` + undoCard + syncCard(), after: bindUpload};
+  if (U.map.name < 0 || U.map.qty < 0) return {html: head + step2 + `<div class="note w">상품명 열과 수량 열을 선택하면 미리보기가 나타납니다.</div>` + undoCard, after: bindUpload};
 
   const P = upPlan(U, O), c = P.cnt;
   const optBase = `<option value="__skip">제외 (반영 안 함)</option><option value="__new">신규 품목으로 추가</option><optgroup label="기존 품목에 연결">${P.tpl.filter(r => sq(r.name)).map(r => `<option value="${esc(sq(r.name))}">${esc(r.name)}</option>`).join('')}</optgroup>`;
@@ -1518,7 +1596,7 @@ function viewUpload(){
       ${c.new ? `<div class="field"><label for="uNewCat">신규 품목 구분</label><select id="uNewCat">${cats.map(x => `<option ${x===O.newCat?'selected':''}>${esc(x)}</option>`).join('')}</select></div>` : ''}
     </div>
     <div class="bar" style="margin:16px 0 0"><button class="btn pri" id="uApply" ${canApply?'':'disabled'}>이 내용으로 반영</button><button class="btn" id="uClear">파일 지우기</button></div></div>`;
-  return {html: head + step2 + step3 + undoCard + syncCard(), after: bindUpload};
+  return {html: head + step2 + step3 + undoCard, after: bindUpload};
 }
 function bindUpload(){
   const U = UI.U, O = UI.UP, rerender = () => { const y = scrollY; render(); scrollTo(0, y); };
@@ -1531,7 +1609,6 @@ function bindUpload(){
   dz.addEventListener('drop', e => { const f = e.dataTransfer && e.dataTransfer.files[0]; if (f) loadUploadFile(f); });
   const sh = $('#uShow'); if (sh) sh.onclick = () => { UI.month = S.undo.month; saveUI(); setTab('month'); };
   const ud = $('#uUndo'); if (ud) ud.onclick = undoUpload;
-  bindSync();
   if (!U) return;
   const keepOpen = () => { const o = $$('details.raw').map(d => d.open); return () => $$('details.raw').forEach((d, i) => { if (o[i] !== undefined) d.open = o[i]; }); };
   const redo = () => { const restore = keepOpen(); rerender(); restore(); };
@@ -1548,7 +1625,7 @@ function bindUpload(){
 }
 
 /* ---------- 렌더 ---------- */
-const VIEWS = {dash: viewDash, month: viewMonth, trend: viewTrend, entry: viewEntry, upload: viewUpload, master: viewMaster, check: viewCheck};
+const VIEWS = {live: viewLive, dash: viewDash, month: viewMonth, trend: viewTrend, entry: viewEntry, upload: viewUpload, master: viewMaster, check: viewCheck};
 function render(){
   renderTabs(); renderConn(); hideTip();
   const v = VIEWS[UI.tab]();
@@ -1558,7 +1635,7 @@ function render(){
 }
 function importBar(){ // 마지막 엑셀 반영 기준 시각 + 새 상품 확인
   const L = S.lastImport;
-  if (!L || !['dash','month','trend'].includes(UI.tab)) return '';
+  if (!L || !['live','dash','month','trend'].includes(UI.tab)) return '';
   const pend = SY.token || !SYNC.remote ? (L.pending || []) : [], sm = L.sum || {}; // 새 상품 확인은 저장 권한이 있는 곳에서만
   const cats = [...new Set((S.cats || []).concat(['미분류']))];
   const pendHtml = pend.length ? `<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px">
