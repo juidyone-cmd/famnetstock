@@ -1,0 +1,1732 @@
+<title>팜넷 재고·유통 관리 시스템</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: 참고 사이트와 같은 한 단 구조. 헤더(로고·연결 상태) → 상단 탭 → 섹션별 카드. 표는 가로 스크롤 영역 안에서만 넓어진다. */
+:root{
+  --bg:#f2f5f8; --surface:#ffffff; --surface2:#f7f9fb; --ink:#14202e; --ink2:#46566a; --muted:#6f7f90;
+  --line:#dce3ea; --line2:#e9eef3; --brand:#1f4e78; --brand-ink:#ffffff; --brand-soft:#e3edf6;
+  --focus:#2a78d6; --s1:#2a78d6; --s2:#eb6834; --total:#14202e;
+  --ok-bg:#e2f0d9; --ok-fg:#2f5a1c; --warn-bg:#fff0bf; --warn-fg:#6d5200;
+  --danger-bg:#fde0df; --danger-fg:#a01a1a; --exp-bg:#7a1f1f; --exp-fg:#ffffff;
+  --none-bg:#e7e9ec; --none-fg:#515b66; --info-bg:#e3edf6; --info-fg:#1f4e78;
+  --shadow:0 1px 2px rgba(20,32,46,.06),0 4px 14px rgba(20,32,46,.05);
+  --font:"IBM Plex Sans KR","Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e141b; --surface:#16202a; --surface2:#1b2733; --ink:#e8eef4; --ink2:#b3c0cd; --muted:#8696a7;
+  --line:#2a3846; --line2:#222f3b; --brand:#8fbbe6; --brand-ink:#0e141b; --brand-soft:#1d3144;
+  --focus:#5aa0f2; --s1:#3987e5; --s2:#d95926; --total:#e8eef4;
+  --ok-bg:#1f3a26; --ok-fg:#a9dca0; --warn-bg:#41350f; --warn-fg:#f3d673;
+  --danger-bg:#4a1d1d; --danger-fg:#ff9f9f; --exp-bg:#8a2424; --exp-fg:#fff0f0;
+  --none-bg:#2a343e; --none-fg:#a9b4bf; --info-bg:#1d3144; --info-fg:#a8cdf2;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.25); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e141b; --surface:#16202a; --surface2:#1b2733; --ink:#e8eef4; --ink2:#b3c0cd; --muted:#8696a7;
+  --line:#2a3846; --line2:#222f3b; --brand:#8fbbe6; --brand-ink:#0e141b; --brand-soft:#1d3144;
+  --focus:#5aa0f2; --s1:#3987e5; --s2:#d95926; --total:#e8eef4;
+  --ok-bg:#1f3a26; --ok-fg:#a9dca0; --warn-bg:#41350f; --warn-fg:#f3d673;
+  --danger-bg:#4a1d1d; --danger-fg:#ff9f9f; --exp-bg:#8a2424; --exp-fg:#fff0f0;
+  --none-bg:#2a343e; --none-fg:#a9b4bf; --info-bg:#1d3144; --info-fg:#a8cdf2;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.25); color-scheme:dark}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.55;margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 56px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
+.wrap{max-width:1220px;margin:0 auto}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--mono)}
+.muted{color:var(--muted)}
+
+/* header */
+.top{display:flex;align-items:center;gap:14px 18px;flex-wrap:wrap;padding:22px 0 16px}
+.logo{display:flex;align-items:center;gap:12px;min-width:0}
+.mark{width:42px;height:42px;border-radius:10px;background:var(--brand);color:var(--brand-ink);display:grid;place-items:center;flex:none}
+.logo h1{font-size:20px;line-height:1.25;margin:0;font-weight:700;letter-spacing:-.01em}
+.logo small{display:block;font-size:12px;color:var(--muted);letter-spacing:.06em;font-weight:500}
+.conn{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-size:12.5px;color:var(--ink2);text-align:right}
+.conn b{font-weight:600}
+.dotc{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted);margin-right:6px;vertical-align:1px}
+.dotc.on{background:#2e9b57}.dotc.off{background:#d98c1f}
+.qup{display:inline-flex;align-items:center;gap:7px;cursor:pointer;white-space:nowrap}
+.qup:focus-within{outline:2px solid var(--focus);outline-offset:2px}
+body.dragging::after{content:'놓으면 재고를 바로 반영합니다';position:fixed;inset:10px;border:3px dashed var(--brand);border-radius:16px;background:color-mix(in srgb,var(--brand-soft) 85%,transparent);display:grid;place-items:center;font-size:20px;font-weight:700;color:var(--brand);z-index:50;pointer-events:none}
+.ibar{padding:14px 18px}
+.ibar .sub{margin:3px 0 0}
+.ibar table td{padding:6px 8px}
+.sync-steps{margin:8px 0 0;padding-left:20px;font-size:12.5px;color:var(--ink2);line-height:1.7}
+.dotc.sync{background:#2a78d6}.dotc.err{background:#d0453a}
+.meeting{font-size:12px;color:var(--brand);background:var(--brand-soft);padding:2px 9px;border-radius:99px;font-weight:600}
+
+/* tabs */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:thin;margin-bottom:18px}
+.tab{background:none;border:0;border-bottom:3px solid transparent;padding:11px 16px 10px;font-weight:600;color:var(--ink2);white-space:nowrap;margin-bottom:-1px}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--brand);border-bottom-color:var(--brand)}
+
+/* toolbar */
+.bar{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin-bottom:16px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field>label,.lbl{font-size:12px;font-weight:600;color:var(--ink2);letter-spacing:.02em}
+.field em{font-style:italic;font-weight:400;color:var(--muted)}
+input[type=text],input[type=number],input[type=date],select,textarea{background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:8px 10px;min-height:38px;width:100%}
+textarea{resize:vertical;min-height:84px}
+input[readonly]{background:var(--surface2);color:var(--ink2)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:none;padding:8px 13px;font-weight:500;color:var(--ink2);min-height:38px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;font-weight:600;min-height:38px;color:var(--ink)}
+.btn:hover{border-color:var(--brand)}
+.btn.pri{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.btn.pri:hover{filter:brightness(1.08)}
+.btn.warn{color:var(--danger-fg);border-color:var(--danger-fg)}
+.btn.sm{padding:4px 10px;min-height:30px;font-size:12.5px}
+.sp{flex:1}
+
+/* cards */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:18px 20px;min-width:0}
+.card h2{font-size:15px;margin:0 0 3px;font-weight:700;letter-spacing:-.005em}
+.card .sub{font-size:12.5px;color:var(--muted);margin:0 0 14px}
+.grid{display:grid;gap:16px}
+.g4{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))}
+.stack{display:flex;flex-direction:column;gap:16px}
+.kpi{padding:16px 18px}
+.kpi .k{font-size:12px;font-weight:600;color:var(--ink2);letter-spacing:.02em}
+.kpi .v{font-size:28px;font-weight:700;line-height:1.2;margin:4px 0 2px;letter-spacing:-.02em}
+.kpi .d{font-size:12.5px;color:var(--ink2)}
+.sec-title{display:flex;align-items:baseline;gap:10px;margin:0 0 12px}
+.sec-title h2{margin:0}
+
+/* pills */
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 9px 2px 7px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;line-height:1.5}
+.pill i{font-style:normal;font-size:10px;width:14px;height:14px;border-radius:50%;display:inline-grid;place-items:center;background:rgba(255,255,255,.55);color:inherit}
+.p-정상{background:var(--ok-bg);color:var(--ok-fg)}
+.p-경고{background:var(--warn-bg);color:var(--warn-fg)}
+.p-위험{background:var(--danger-bg);color:var(--danger-fg)}
+.p-만료{background:var(--exp-bg);color:var(--exp-fg)}
+.p-재고없음,.p-미입력{background:var(--none-bg);color:var(--none-fg)}
+.p-info{background:var(--info-bg);color:var(--info-fg)}
+.chip{display:inline-block;padding:1px 8px;border-radius:5px;font-size:12px;font-weight:600;background:var(--brand-soft);color:var(--brand)}
+
+/* tables */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:8px 11px;text-align:left;border-bottom:1px solid var(--line2);vertical-align:middle}
+th{background:var(--brand);color:var(--brand-ink);font-weight:600;font-size:12.5px;white-space:nowrap;position:sticky;top:0}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable:hover{filter:brightness(1.1)}
+td.r,th.r{text-align:right}
+td{white-space:nowrap}
+td.nm{min-width:210px;font-weight:600;white-space:normal}
+td.plan{min-width:260px;color:var(--ink2);white-space:normal}
+tbody tr:hover td{background:var(--surface2)}
+tfoot td{background:var(--brand-soft);font-weight:700;border-bottom:0}
+tr.dim td{color:var(--muted)}
+.pos{color:var(--ink)}
+.delta{white-space:nowrap}
+.flag{display:inline-block;font-size:11px;font-weight:700;color:var(--warn-fg);background:var(--warn-bg);border-radius:4px;padding:0 5px;margin-left:5px}
+
+/* bars */
+.sbar{display:flex;gap:2px;height:16px}
+.sbar span{display:block;min-width:3px;border-radius:3px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--ink2);margin:10px 0 0}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:10px;height:10px;border-radius:3px;display:inline-block}
+.hb{display:grid;grid-template-columns:52px 1fr 70px;align-items:center;gap:10px;margin:7px 0}
+.hb .tr{display:flex;gap:2px;height:20px}
+.hb .tr span{display:block;height:100%}
+.hb .tr span:first-child{border-radius:0 0 0 0}
+.hb .t{font-weight:600;text-align:right}
+.stk{cursor:default}
+.cov{display:flex;flex-direction:column;gap:3px;min-width:150px}
+.cov div{height:7px;border-radius:2px}
+
+/* chart */
+.chart{position:relative}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart text{fill:var(--ink2);font-size:11.5px;font-family:var(--font)}
+.chart .gl{stroke:var(--line);stroke-width:1}
+.chart .ax{stroke:var(--muted);stroke-width:1}
+#tip{position:fixed;z-index:50;pointer-events:none;background:var(--ink);color:var(--bg);padding:7px 10px;border-radius:7px;font-size:12.5px;line-height:1.45;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:260px;display:none}
+#tip b{font-weight:700}
+.spark{display:block}
+
+/* forms */
+.fgrid{display:grid;gap:12px 14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr))}
+.layout{display:grid;gap:16px;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);align-items:start}
+@media (max-width:900px){.layout{grid-template-columns:minmax(0,1fr)}}
+.radio{display:flex;gap:8px;flex-wrap:wrap}
+.radio label{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:7px 12px;background:var(--surface);cursor:pointer;font-weight:500}
+.radio input{accent-color:var(--brand)}
+.prev{position:sticky;top:12px}
+.prev .big{font-size:26px;font-weight:700;letter-spacing:-.02em}
+.kv{display:grid;grid-template-columns:96px 1fr;gap:7px 12px;font-size:13px;margin:12px 0 0}
+.kv dt{color:var(--muted);font-weight:600}
+.kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.prog{height:8px;border-radius:99px;background:var(--line2);overflow:hidden;margin:8px 0 12px}
+.prog span{display:block;height:100%;background:var(--brand);border-radius:99px}
+.items{display:grid;gap:6px;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));max-height:360px;overflow:auto}
+.it{display:flex;align-items:center;gap:8px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 10px;min-width:0}
+.it:hover{border-color:var(--brand)}
+.it span.n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px}
+.it.done{background:var(--surface2)}
+.ck{width:16px;height:16px;border-radius:50%;border:2px solid var(--line);flex:none;display:grid;place-items:center;font-size:10px;line-height:1}
+.it.done .ck{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.note{background:var(--info-bg);color:var(--info-fg);border-radius:8px;padding:9px 12px;font-size:12.5px}
+.note.w{background:var(--warn-bg);color:var(--warn-fg)}
+.issue{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.issue>header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--line2);flex-wrap:wrap}
+.issue>header b{font-size:13.5px}
+.issue ul{margin:0;padding:6px 14px 10px 30px;font-size:13px;color:var(--ink2)}
+.issue li{margin:4px 0}
+.lg{font-size:12.5px;display:grid;grid-template-columns:132px 100px 1fr;gap:3px 12px;padding:8px 0;border-bottom:1px solid var(--line2)}
+@media (max-width:640px){.lg{grid-template-columns:1fr}}
+.insight{margin:0;padding-left:18px;color:var(--ink2);display:grid;gap:6px}
+.insight b{color:var(--ink)}
+.empty{padding:26px;text-align:center;color:var(--muted)}
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:99px;font-weight:600;font-size:13px;z-index:60;display:none;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:calc(100vw - 32px)}
+.modal{position:fixed;inset:0;background:rgba(10,16,24,.55);z-index:70;display:grid;place-items:center;padding:16px}
+.modal .card{width:min(640px,100%)}
+.hide-sm{display:revert}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;opacity:0}
+.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:2px dashed var(--line);border-radius:12px;padding:26px 16px;text-align:center;cursor:pointer;background:var(--surface2);color:var(--ink2)}
+.drop:hover,.drop.on,.drop:focus-within{border-color:var(--brand);background:var(--brand-soft)}
+.drop b{color:var(--ink);font-size:14px}
+select.cell{min-height:32px;padding:4px 8px;font-size:12.5px;min-width:230px}
+.chk{display:inline-flex;gap:8px;align-items:center;font-weight:500;cursor:pointer}
+.chk input{accent-color:var(--brand)}
+details.raw{margin-top:12px}
+details.raw summary{cursor:pointer;font-weight:600;color:var(--ink2);font-size:12.5px}
+.raw td{max-width:180px;overflow:hidden;text-overflow:ellipsis;font-size:12px}
+@media (max-width:640px){.qup{width:100%;justify-content:center}.conn{margin-left:0;align-items:flex-start;text-align:left}}
+@media (prefers-reduced-motion:no-preference){.tab,.btn,.it{transition:border-color .12s,color .12s,background .12s}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="logo">
+      <div class="mark" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V9l7-5 7 5v11"/><path d="M9 20v-6h6v6"/><path d="M12 4v3"/></svg>
+      </div>
+      <div><small>FAMNET</small><h1>팜넷 재고·유통 관리 시스템</h1></div>
+    </div>
+    <div class="conn">
+      <span id="connLine"><span class="dotc"></span>연결 확인 중</span>
+      <span id="meetLine"></span>
+    </div>
+    <label class="btn pri qup" for="qFile" title="이지어드민 재고 엑셀을 올리면 바로 반영합니다. 화면 어디에 끌어다 놓아도 됩니다">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m6 10 6-6 6 6"/><path d="M4 20h16"/></svg>
+      재고 엑셀 올리기<input type="file" id="qFile" class="sr" accept=".xlsx,.xls,.csv,.txt"></label>
+  </header>
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+  <main id="view"></main>
+</div>
+<div id="tip" role="tooltip"></div>
+<div id="toast" role="status"></div>
+<div id="modalRoot"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+<script>
+"use strict";
+/* ---------- 원본 엑셀(260824 재고·유통 자료)에서 옮긴 초기 데이터 ---------- */
+const SEED = {"cats":["무주","금산","양구","보성","남원","양양"],"master":[{"cat":"무주","name":"천마보감"},{"cat":"금산","name":"금산 약과"},{"cat":"양구","name":"양구 삶은시래기"},{"cat":"보성","name":"냉동 골드키위"},{"cat":"보성","name":"보성키위젤리"},{"cat":"보성","name":"보성키위젤리 초코볼"},{"cat":"보성","name":"보성키위키키 골드키위 그린티"},{"cat":"무주","name":"천홍록 정 프리미엄[27.03.25]"},{"cat":"무주","name":"천홍록 순액[27.12.23]"},{"cat":"무주","name":"천홍록 앰플[28.04.18]"},{"cat":"무주","name":"천홍록 스틱젤리[27.07.20]"},{"cat":"무주","name":"천마전복 삼계탕[27.12.14]"},{"cat":"무주","name":"무주천마 갈비탕[27.07.20]"},{"cat":"무주","name":"무주천마 한우 도가니탕[27.06.25]"},{"cat":"무주","name":"천마수 곡물블렌딩[27.06.24]"},{"cat":"무주","name":"무주천마차[27.06.16]"},{"cat":"무주","name":"천마인지[28.03.31]"},{"cat":"남원","name":"남원추어 페이스트 골드[28.02.19]"},{"cat":"남원","name":"남원추어 전골소스[28.01.21]"},{"cat":"남원","name":"남원추어 곱창모듬[27.02.10]"},{"cat":"남원","name":"남원추어 해장국[27.02.11]"},{"cat":"남원","name":"남원추어 육개장[27.05.23]"},{"cat":"남원","name":"남원추어 납작만두[27.01.15]"},{"cat":"남원","name":"미꾸야 온추어탕[26.11.30]"},{"cat":"남원","name":"미꾸야 꾸이랑 오리지널[27.04.21]"},{"cat":"남원","name":"미꾸야 자일리톨 캔디[26.11.07]"},{"cat":"보성","name":"보성 키위키키 그린키위 음료베이스_1kg [2028.03.03.]"},{"cat":"양양","name":"오브양양 표고버섯 메밀전병 [27.08.17]"},{"cat":"양양","name":"오브양양 가득담은 버섯전골 [27.10.14]"},{"cat":"양양","name":"오브양양 표고버섯 어향가지 [27.10.14]"}],"tabs":[{"tab":"2026-05","date":"2026-05-01"},{"tab":"2026-06","date":"2026-06-01"},{"tab":"2026-07","date":"2026-07-01"},{"tab":"2026-08","date":"2026-08-01"},{"tab":"2026-09","date":"2026-09-01"},{"tab":"2026-10","date":"2026-10-01"},{"tab":"2026-11","date":"2026-11-01"},{"tab":"2026-12","date":"2026-12-01"}],"months":{"2026-08":{"base":"2026-08-24","rows":[{"cat":"양구","name":"양구 삶은시래기","zb":1014,"biz":0,"mfg":"2024-08-23","exp":"2027-07-26","plan":"스마트스토어 월 300봉 판매"},{"cat":"남원","name":"남원추어 해장국[27.02.11]","zb":2326,"biz":360,"mfg":"2026-02-12","exp":"2027-02-11","plan":"감자마켓 500봉, 다이클로 500봉 판매"},{"cat":"남원","name":"남원추어 육개장[27.05.23]","zb":2564,"biz":340,"mfg":"2026-05-22","exp":"2027-05-23","plan":"감자마켓 500봉, 다이클로 500봉 판매"},{"cat":"남원","name":"미꾸야 온추어탕[26.11.30]","zb":913,"biz":500,"mfg":"2025-12-01","exp":"2026-11-30","plan":"감자마켓 300봉, 다이클로 300봉 판매"},{"cat":"남원","name":"남원추어 납작만두[27.01.15]","zb":2197,"biz":576,"mfg":"2026-01-16","exp":"2027-01-15","plan":"감자마켓 200봉, 다이클로 200봉 판매"},{"cat":"남원","name":"미꾸야 꾸이랑 오리지널[27.04.21]","zb":5346,"biz":960,"mfg":"2026-04-22","exp":"2027-04-21","plan":"관내 유통 테스트 판매 (200봉)"},{"cat":"남원","name":"미꾸야 자일리톨 캔디[26.11.07]","zb":378,"biz":640,"mfg":"2026-11-08","exp":"2026-11-07","plan":"내부 소진"},{"cat":"남원","name":"남원추어 페이스트 골드[28.02.19]","zb":133,"biz":0,"mfg":"2026-02-20","exp":"2028-02-19","plan":"식자재연구소 판매"},{"cat":"남원","name":"남원추어 전골소스[28.01.21]","zb":1610,"biz":0,"mfg":"2026-01-22","exp":"2028-01-21","plan":"리파인 230개 판매"},{"cat":"남원","name":"남원추어 곱창모듬[27.02.10]","zb":679,"biz":0,"mfg":"2026-02-11","exp":"2027-02-10","plan":"리파인 230개 판매"},{"cat":"보성","name":"냉동 골드키위","zb":557,"biz":0,"mfg":"2025-03-09","exp":"2027-03-10","plan":"키위청 생산 시 사용"},{"cat":"보성","name":"보성키위젤리","zb":5015,"biz":0,"mfg":"2026-04-23","exp":"2027-04-22","plan":"동행상회&관내 판매장 판매"},{"cat":"무주","name":"천홍록 정 프리미엄","zb":167,"biz":705,"mfg":"2025-03-26","exp":"2027-03-25","plan":"온라인몰 유통"},{"cat":"무주","name":"천홍록 순액","zb":131,"biz":295,"mfg":"2025-12-24","exp":"2027-12-23","plan":"온라인몰 유통"},{"cat":"무주","name":"천홍록 앰플","zb":319,"biz":482,"mfg":"2025-03-03","exp":"2027-03-02","plan":"온라인몰 유통"},{"cat":"무주","name":"천홍록 스틱젤리","zb":611,"biz":382,"mfg":"2026-07-27","exp":"2027-07-20","plan":"온라인몰 유통"},{"cat":"무주","name":"천마전복 삼계탕","zb":605,"biz":208,"mfg":"2025-06-15","exp":"2027-12-14","plan":"부산 박람회 부스 운영"},{"cat":"무주","name":"무주천마 갈비탕","zb":573,"biz":0,"mfg":"2025-07-30","exp":"2027-07-02","plan":"부산 박람회 부스 운영"},{"cat":"무주","name":"무주천마 한우 도가니탕","zb":393,"biz":0,"mfg":"2025-12-26","exp":"2027-06-25","plan":"부산 박람회 부스 운영"},{"cat":"무주","name":"천마수 곡물블렌딩","zb":4872,"biz":18096,"mfg":"2025-06-25","exp":"2027-06-24","plan":"부산 박람회 부스 운영"},{"cat":"무주","name":"무주천마차","zb":304,"biz":690,"mfg":"2023-05-22","exp":"2027-06-16","plan":"온라인몰 유통"},{"cat":"무주","name":"천마인지","zb":495,"biz":461,"mfg":"2026-04-01","exp":"2028-03-31","plan":"온라인몰 유통"},{"cat":"무주","name":"천마보감","zb":0,"biz":0,"mfg":null,"exp":null,"plan":""},{"cat":"보성","name":"보성 키위키키 그린키위 음료베이스_1kg [2028.03.03.]","zb":2352,"biz":0,"mfg":"2026-03-02","exp":"2028-03-03","plan":"백억커피 10월 내 소진 예정 / 신규 영업 1곳 필요"},{"cat":"금산","name":"금산 약과","zb":22450,"biz":0,"mfg":"2025-12-10","exp":"2026-12-09","plan":"돌봄급식 전량 판매 예정"}]},"2026-09":{"base":"2026-09-30","rows":[{"cat":"양구","name":"양구 삶은시래기","zb":972,"biz":0,"mfg":"2026-08-23","exp":"2027-08-22","plan":"스마트스토어 월 100봉 판매"},{"cat":"남원","name":"남원추어 해장국[27.02.11]","zb":2313,"biz":520,"mfg":"2026-02-12","exp":"2027-02-11","plan":"부천중소마트 300봉, 커뮤니티 채널 100봉 판매"},{"cat":"남원","name":"남원추어 육개장[27.05.23]","zb":2538,"biz":480,"mfg":"2026-05-22","exp":"2027-05-23","plan":"부천중소마트 300봉, 커뮤니티 채널 100봉 판매"},{"cat":"남원","name":"미꾸야 온추어탕[26.11.30]","zb":1,"biz":500,"mfg":"2025-12-01","exp":"2026-11-30","plan":"부천중소마트 300봉, 커뮤니티 채널 100봉 판매"},{"cat":"남원","name":"남원추어 납작만두[27.01.15]","zb":2158,"biz":576,"mfg":"2026-01-16","exp":"2027-01-15","plan":"부천중소마트 300봉, 커뮤니티 채널 100봉 판매"},{"cat":"남원","name":"미꾸야 꾸이랑 오리지널[27.04.21]","zb":4154,"biz":1000,"mfg":"2026-04-22","exp":"2027-04-21","plan":"관내 유통 판매 (200봉)"},{"cat":"남원","name":"미꾸야 자일리톨 캔디[26.11.07]","zb":374,"biz":240,"mfg":"2026-11-08","exp":"2026-11-07","plan":"내부 소진"},{"cat":"남원","name":"남원추어 페이스트 골드[28.02.19]","zb":130,"biz":0,"mfg":"2026-02-20","exp":"2028-02-19","plan":"식자재연구소 판매"},{"cat":"남원","name":"남원추어 전골소스[28.01.21]","zb":1435,"biz":0,"mfg":"2026-01-22","exp":"2028-01-21","plan":"리파인 230개 판매"},{"cat":"남원","name":"남원추어 곱창모듬[27.02.10]","zb":504,"biz":0,"mfg":"2026-02-11","exp":"2027-02-10","plan":"리파인 230개 판매"},{"cat":"보성","name":"냉동 골드키위","zb":407,"biz":0,"mfg":"2025-03-09","exp":"2027-03-10","plan":"키위청 추가 생산 시 사용"},{"cat":"보성","name":"보성키위젤리","zb":3463,"biz":0,"mfg":"2026-04-23","exp":"2027-04-22","plan":"동행상회&관내 판매장 판매"},{"cat":"무주","name":"천홍록 정 프리미엄","zb":83,"biz":622,"mfg":"2025-03-26","exp":"2027-03-25","plan":"온라인몰 유통"},{"cat":"무주","name":"천홍록 순액","zb":111,"biz":270,"mfg":"2025-12-24","exp":"2027-12-23","plan":"온라인몰 유통"},{"cat":"무주","name":"천홍록 앰플","zb":207,"biz":280,"mfg":"2026-04-19","exp":"2028-04-18","plan":"온라인몰 유통"},{"cat":"무주","name":"천홍록 스틱젤리","zb":489,"biz":340,"mfg":"2026-07-27","exp":"2027-07-20","plan":"온라인몰 유통"},{"cat":"무주","name":"천마전복 삼계탕","zb":570,"biz":0,"mfg":"2025-06-15","exp":"2027-12-14","plan":"부산 박람회 부스 운영"},{"cat":"무주","name":"무주천마 갈비탕","zb":554,"biz":0,"mfg":"2025-07-30","exp":"2027-07-02","plan":"부산 박람회 부스 운영"},{"cat":"무주","name":"무주천마 한우 도가니탕","zb":389,"biz":0,"mfg":"2025-12-26","exp":"2027-06-25","plan":"부산 박람회 부스 운영"},{"cat":"무주","name":"천마수 곡물블렌딩","zb":4872,"biz":16104,"mfg":"2025-06-25","exp":"2027-06-24","plan":"부산 박람회 부스 운영"},{"cat":"무주","name":"무주천마차","zb":304,"biz":559,"mfg":"2023-05-22","exp":"2027-06-16","plan":"온라인몰 유통"},{"cat":"무주","name":"천마인지","zb":307,"biz":445,"mfg":"2026-04-01","exp":"2028-03-31","plan":"온라인몰 유통"},{"cat":"무주","name":"천마보감","zb":0,"biz":0,"mfg":null,"exp":null,"plan":""},{"cat":"보성","name":"보성 키위키키 그린키위 음료베이스_1kg [2028.03.03.]","zb":1387,"biz":0,"mfg":"2026-03-02","exp":"2028-03-03","plan":"9월 21일 추가 발주 완료 / 백억커피 10월 내 소진 예정"},{"cat":"금산","name":"금산 약과","zb":0,"biz":0,"mfg":"2025-12-10","exp":"2026-12-09","plan":"돌봄급식 전량 판매 완료 / 남은 수량 나눠먹기","tot":800},{"cat":"양양","name":"오브양양 표고버섯 메밀전병 [27.08.17]","zb":860,"biz":0,"mfg":"2026-08-16","exp":"2027-08-17","plan":"관내 판매"},{"cat":"보성","name":"보성키위젤리 초코볼","zb":21500,"biz":0,"mfg":null,"exp":"2027-08-31","plan":""},{"cat":"보성","name":"보성키위키키 골드키위 그린티","zb":1968,"biz":0,"mfg":null,"exp":"2028-08-05","plan":""}]},"2026-10":{"base":"2026-10-31","rows":[{"cat":"양구","name":"양구 삶은시래기","zb":881,"biz":0,"mfg":"2026-08-23","exp":"2027-08-22","plan":"스마트스토어 월 100봉 판매"},{"cat":"남원","name":"남원추어 해장국[27.02.11]","zb":1870,"biz":200,"mfg":"2026-02-12","exp":"2027-02-11","plan":"올잇마켓 200봉, 부천중소마트 100봉 판매"},{"cat":"남원","name":"남원추어 육개장[27.05.23]","zb":2289,"biz":200,"mfg":"2026-05-22","exp":"2027-05-23","plan":"올잇마켓 200봉, 부천중소마트 100봉 판매"},{"cat":"남원","name":"미꾸야 온추어탕[26.11.30]","zb":0,"biz":200,"mfg":"2025-12-01","exp":"2026-11-30","plan":"지브레인 재고 없음. 사업단 재고 사업단 자체 사용"},{"cat":"남원","name":"남원추어 납작만두[27.01.15]","zb":2038,"biz":480,"mfg":"2026-01-16","exp":"2027-01-15","plan":"올잇마켓 200봉, 부천중소마트 100봉 판매, 흥부골 100봉 판매"},{"cat":"남원","name":"미꾸야 꾸이랑 오리지널[27.04.21]","zb":2638,"biz":1000,"mfg":"2026-04-22","exp":"2027-04-21","plan":"관내 유통 판매 (200봉)"},{"cat":"남원","name":"미꾸야 자일리톨 캔디[26.11.07]","zb":0,"biz":240,"mfg":"2026-11-08","exp":"2026-11-07","plan":"사무실로 이동. 내부 소진"},{"cat":"남원","name":"남원추어 페이스트 골드[28.02.19]","zb":119,"biz":0,"mfg":"2026-02-20","exp":"2028-02-19","plan":"식자재연구소 판매"},{"cat":"남원","name":"남원추어 전골소스[28.01.21]","zb":1219,"biz":0,"mfg":"2026-01-22","exp":"2028-01-21","plan":"리파인 230개 판매"},{"cat":"남원","name":"남원추어 곱창모듬[27.02.10]","zb":279,"biz":0,"mfg":"2026-02-11","exp":"2027-02-10","plan":"리파인 230개 판매"},{"cat":"보성","name":"냉동 골드키위","zb":407,"biz":0,"mfg":"2025-03-09","exp":"2027-03-10","plan":"키위청 추가 생산 시 사용"},{"cat":"보성","name":"보성키위젤리","zb":2360,"biz":0,"mfg":"2026-04-23","exp":"2027-04-22","plan":"동행상회&관내 판매장 판매"},{"cat":"무주","name":"천홍록 정 프리미엄[27.03.25]","zb":273,"biz":84,"mfg":"2025-03-26","exp":"2027-03-25","plan":"온라인몰 유통"},{"cat":"무주","name":"천홍록 순액[27.12.23]","zb":90,"biz":256,"mfg":"2025-12-24","exp":"2027-12-23","plan":"온라인몰 유통"},{"cat":"무주","name":"천홍록 앰플[28.04.18]","zb":203,"biz":289,"mfg":"2026-04-19","exp":"2028-04-18","plan":"온라인몰 유통"},{"cat":"무주","name":"천홍록 스틱젤리[27.07.20]","zb":477,"biz":340,"mfg":"2026-07-27","exp":"2027-07-20","plan":"온라인몰 유통"},{"cat":"무주","name":"천마전복 삼계탕[27.12.14]","zb":111,"biz":200,"mfg":"2026-06-15","exp":"2027-12-14","plan":""},{"cat":"무주","name":"무주천마 갈비탕[27.07.20]","zb":22,"biz":100,"mfg":"2025-07-30","exp":"2027-07-20","plan":""},{"cat":"무주","name":"무주천마 한우 도가니탕[27.06.25]","zb":18,"biz":160,"mfg":"2025-12-26","exp":"2027-06-25","plan":""},{"cat":"무주","name":"천마수 곡물블렌딩[27.06.24]","zb":4368,"biz":15504,"mfg":"2026-06-25","exp":"2027-06-24","plan":""},{"cat":"무주","name":"무주천마차[27.06.16]","zb":304,"biz":528,"mfg":"2025-06-17","exp":"2027-06-16","plan":"온라인몰 유통"},{"cat":"무주","name":"천마인지[28.03.31]","zb":307,"biz":421,"mfg":"2026-04-01","exp":"2028-03-31","plan":"온라인몰 유통"},{"cat":"무주","name":"천마보감","zb":0,"biz":0,"mfg":null,"exp":null,"plan":""},{"cat":"보성","name":"보성 키위키키 그린키위 음료베이스_1kg [2028.03.03.]","zb":1387,"biz":0,"mfg":"2026-03-02","exp":"2028-03-03","plan":"9월 21일 추가 발주 완료 / 백억커피 10월 내 소진 예정"},{"cat":"금산","name":"금산 약과","zb":0,"biz":0,"mfg":"2025-12-10","exp":"2026-12-09","plan":""},{"cat":"양양","name":"오브양양 표고버섯 메밀전병 [27.08.17]","zb":350,"biz":379,"mfg":"2026-08-16","exp":"2027-08-17","plan":"잔여 재고 메가쇼 판매 예정, 추가 생산 예정"},{"cat":"보성","name":"보성키위젤리 초코볼","zb":14799,"biz":0,"mfg":null,"exp":"2027-08-31","plan":"관내 판매"},{"cat":"보성","name":"보성키위키키 골드키위 그린티","zb":389,"biz":0,"mfg":null,"exp":"2028-08-05","plan":"보성몰 등 온라인 판매"},{"cat":"양양","name":"오브양양 가득담은 버섯전골 [27.10.14]","zb":0,"biz":0,"mfg":"2026-10-14","exp":"2027-10-13","plan":""},{"cat":"양양","name":"오브양양 표고버섯 어향가지 [27.10.14]","zb":0,"biz":25,"mfg":"2026-10-14","exp":"2027-10-13","plan":""}]}},"corrections":[{"month":"2026-09","name":"냉동 골드키위","from":557,"to":407},{"month":"2026-09","name":"보성키위젤리","from":5015,"to":3463},{"month":"2026-09","name":"보성키위키키 골드키위 그린티","from":9,"to":1968}]};
+
+/* ---------- 유틸 ---------- */
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => (n === null || n === undefined || n === '' || Number.isNaN(n)) ? '–' : Number(n).toLocaleString('ko-KR');
+const norm = s => String(s||'').replace(/\s*\[[^\]]*\]\s*$/, '').trim();
+const pd = s => { const [y,m,d] = s.split('-').map(Number); return Date.UTC(y, m-1, d); };
+const dayDiff = (a, b) => Math.round((pd(b) - pd(a)) / 864e5);
+const dot = s => s ? s.replace(/-/g, '.') : '–';
+const pad = n => String(n).padStart(2, '0');
+const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+const monthEnd = m => { const [y, mo] = m.split('-').map(Number); return `${m}-${pad(new Date(y, mo, 0).getDate())}`; };
+const defBase = m => m === todayStr().slice(0, 7) ? todayStr() : monthEnd(m); // 진행 중인 달은 오늘, 지난 달은 말일
+const mLabel = m => `${m.slice(0,4)}년 ${+m.slice(5)}월`;
+const mShort = m => `${m.slice(2,4)}.${m.slice(5)}`;
+const signed = n => n === null ? '–' : (n > 0 ? '+' : n < 0 ? '−' : '') + fmt(Math.abs(n));
+const arrow = n => n === null ? '' : n > 0 ? '▲' : n < 0 ? '▼' : '–';
+const STATUS = ['정상','경고','위험','만료','재고없음'];
+const GLYPH = {'정상':'✓','경고':'!','위험':'▲','만료':'✕','재고없음':'–','미입력':'?'};
+const RULE = {
+  '재고없음': {days:'소비기한과 무관', rule:'판매·출고 대상 제외'},
+  '만료': {days:'0일 미만', rule:'즉시 출고 중단 및 폐기·반품 검토'},
+  '위험': {days:'0~60일', rule:'최우선 출고·소진 계획 수립'},
+  '경고': {days:'61~180일', rule:'선제적 유통 실행계획 수립'},
+  '정상': {days:'181일 이상', rule:'정상 유통 및 월별 추이 관리'},
+};
+const pill = st => st ? `<span class="pill p-${st}"><i aria-hidden="true">${GLYPH[st]||''}</i>${st==='미입력'?'기한 미입력':st}</span>` : '<span class="muted">–</span>';
+function thirdMonday(y, m){ // m: 1-12
+  const first = new Date(y, m-1, 1).getDay(); // 0 일
+  const offset = (1 - first + 7) % 7;
+  return 1 + offset + 14;
+}
+
+/* ---------- 상태 ---------- */
+const KEY = 'famnet-stock-v1', UIKEY = 'famnet-stock-ui';
+let storeOK = true, lastSaved = null, memUI = {};
+function loadState(){
+  try { const j = localStorage.getItem(KEY); if (j){ const o = JSON.parse(j); if (o && o.months && o.master) return o; } } catch(e){ storeOK = false; }
+  return null;
+}
+function fresh(){
+  const s = JSON.parse(JSON.stringify(SEED));
+  let id = 1;
+  Object.values(s.months).forEach(m => m.rows.forEach(r => r.id = id++));
+  s.nextId = id; s.log = [];
+  return s;
+}
+const BASE_FIX = {'2026-08': '2026-08-24'}; // 8월은 원본 엑셀(260824) 날짜, 나머지는 월말
+function migrate(st){ // 처음 옮길 때 임의로 넣었던 '매월 10일' 기준일 → 월말 (한 번만, 직접 고친 값은 건드리지 않음)
+  if (!st || !st.months || (st.meta && st.meta.bf)) return false;
+  Object.keys(st.months).forEach(m => { const M = st.months[m]; if (M && !M.src && M.base === `${m}-10`) M.base = BASE_FIX[m] || monthEnd(m); });
+  st.meta = Object.assign({}, st.meta, {bf: 1});
+  return true;
+}
+function migrateCarry(){ // 엑셀을 올려 둔 달의 빈 사업단 재고를 이전 달 값으로 한 번 채운다
+  if (S.meta && S.meta.cb) return false;
+  Object.keys(S.months).forEach(m => { if (S.months[m].src) carryFrom(m, 'biz'); });
+  S.meta = Object.assign({}, S.meta, {cb: 1});
+  return true;
+}
+let S = loadState() || fresh();
+function persist(){ // 이 브라우저에 저장 (공유 저장소는 건드리지 않음)
+  try { localStorage.setItem(KEY, JSON.stringify(S)); storeOK = true; } catch(e){ storeOK = false; }
+  lastSaved = new Date(); renderConn();
+}
+function save(){ // 자료를 바꿨을 때: 이 브라우저에 저장하고, 공유 저장이 켜져 있으면 곧바로 공유 저장소에도 올린다
+  S.meta = Object.assign({}, S.meta, {at: new Date().toISOString()});
+  SY.dirty = true; SYNC.seq++; saveSync(); persist(); schedulePush();
+}
+function loadUI(){ try { return JSON.parse(localStorage.getItem(UIKEY)||'{}')||{}; } catch(e){ return {}; } }
+function saveUI(){ try { localStorage.setItem(UIKEY, JSON.stringify({tab:UI.tab, month:UI.month, mode:UI.mode})); } catch(e){} }
+
+/* ---------- 공유 저장: GitHub 저장소의 data.json 하나를 모두가 함께 본다 ----------
+   · 저장 권한(토큰)이 있는 PC: 고칠 때마다 data.json에 바로 저장
+   · 나머지 PC·휴대폰: 1분마다, 그리고 화면으로 돌아올 때마다 최신 data.json을 받아 화면을 갱신 */
+const SYNCKEY = 'famnet-stock-sync';
+const SY = (() => { try { return JSON.parse(localStorage.getItem(SYNCKEY) || '{}') || {}; } catch(e){ return {}; } })(); // {token, rev, dirty}
+const SYNC = {state: 'local', at: null, msg: '', busy: false, timer: null, remote: false, first: true, seq: 0};
+function saveSync(){ try { localStorage.setItem(SYNCKEY, JSON.stringify(SY)); } catch(e){} }
+function syncRepo(){
+  const h = location.hostname.match(/^([^.]+)\.github\.io$/i), p = location.pathname.split('/').filter(Boolean)[0];
+  return h && p && !/\.html?$/i.test(p) ? `${h[1]}/${p}` : 'juidyone-cmd/famnetstock';
+}
+const b64e = str => { const b = new TextEncoder().encode(str); let x = ''; for (let i = 0; i < b.length; i += 0x8000) x += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(x); };
+const b64d = str => new TextDecoder().decode(Uint8Array.from(atob(String(str).replace(/\s/g, '')), c => c.charCodeAt(0)));
+const validState = o => !!(o && o.months && o.master && typeof o.months === 'object');
+function ghApi(path, opt = {}, token = SY.token){
+  return fetch(`https://api.github.com/repos/${syncRepo()}${path}`, Object.assign({}, opt, {cache: 'no-store',
+    headers: Object.assign({Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28'}, opt.headers || {})}));
+}
+async function fetchRemote(){ // {data, sha} · 아직 없으면 null
+  if (SY.token){
+    const r = await ghApi('/contents/data.json');
+    if (r.status === 404) return null;
+    if (r.status === 401 || r.status === 403) throw new Error('auth');
+    if (!r.ok) throw new Error('net');
+    const j = await r.json();
+    const raw = j.content ? b64d(j.content) : await (await ghApi('/contents/data.json', {headers: {Accept: 'application/vnd.github.raw+json'}})).text();
+    return {data: JSON.parse(raw), sha: j.sha};
+  }
+  if (!/^https?:$/.test(location.protocol)) return null;
+  const r = await fetch(`data.json?t=${Date.now()}`, {cache: 'no-store'});
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error('net');
+  return {data: await r.json(), sha: null};
+}
+const busyEditing = () => { const a = document.activeElement; return (UI.tab === 'entry' && UI.E) || (a && a.closest && a.closest('#view') && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)); };
+function adoptRemote(d){ // 공유 저장소의 최신 자료로 바꾼다
+  const had = SY.dirty;
+  S = d; SY.rev = (d.meta && d.meta.rev) || 0; SY.dirty = false;
+  if ((migrate(S) | migrateCarry()) && SY.token) SY.dirty = true;
+  saveSync(); persist(); if (SY.dirty) schedulePush();
+  if (!S.months[UI.month]) UI.month = months().slice(-1)[0];
+  UI.E = null;
+  if (!SYNC.first) toast(had ? '다른 곳에서 저장한 최신 재고로 바꿨습니다. 이 화면에서 방금 고친 내용은 반영되지 않았습니다' : '최신 재고로 화면을 갱신했습니다');
+  render();
+}
+async function syncPull(){
+  if (SYNC.busy) return;
+  SYNC.busy = true;
+  try {
+    const rm = await fetchRemote();
+    SYNC.remote = !!rm;
+    if (rm && validState(rm.data)){
+      const rev = (rm.data.meta && rm.data.meta.rev) || 0;
+      if (rev > (SY.rev || 0)){
+        if (busyEditing()) { SYNC.busy = false; return; } // 입력 중이면 다음 확인 때 반영
+        adoptRemote(rm.data);
+      }
+    }
+    SYNC.state = SY.token ? 'shared' : (rm ? 'view' : 'local'); SYNC.at = new Date(); SYNC.msg = '';
+    if (SY.token && (!rm || SY.dirty)) schedulePush(300); // 공유 자료가 아직 없거나, 올리지 못한 변경이 있으면 올린다
+  } catch(e){
+    if (SY.token){ SYNC.state = 'error'; SYNC.msg = e.message === 'auth' ? '공유 저장 권한 오류(토큰 확인)' : '공유 저장소에 연결하지 못함'; }
+  }
+  SYNC.first = false; SYNC.busy = false; renderConn();
+}
+function schedulePush(ms = 1200){ if (!SY.token) return; clearTimeout(SYNC.timer); SYNC.timer = setTimeout(syncPush, ms); }
+async function syncPush(){
+  if (!SY.token || !SY.dirty && SYNC.remote) return;
+  if (SYNC.busy){ schedulePush(); return; }
+  SYNC.busy = true; SYNC.state = 'saving'; renderConn();
+  let retry = 0; const seq = SYNC.seq; // 올리는 동안 또 고치면 끝난 뒤 한 번 더 올린다
+  try {
+    let sha;
+    const r0 = await ghApi('/contents/data.json');
+    if (r0.status === 401 || r0.status === 403) throw new Error('auth');
+    if (r0.ok){
+      const j = await r0.json(); sha = j.sha;
+      const rd = j.content ? JSON.parse(b64d(j.content)) : null, rev = (rd && rd.meta && rd.meta.rev) || 0;
+      if (rd && validState(rd) && rev > (SY.rev || 0)){ // 다른 사람이 먼저 저장함 → 그 자료를 따른다
+        SYNC.busy = false; SYNC.first = false; adoptRemote(rd); SYNC.state = 'shared'; SYNC.at = new Date(); renderConn(); return;
+      }
+    } else if (r0.status !== 404) throw new Error('net');
+    const rev = (SY.rev || 0) + 1;
+    S.meta = Object.assign({}, S.meta, {rev});
+    const L = S.lastImport, what = L && S.undo && S.undo.t && Date.now() - Date.parse(S.undo.t) < 120000 ? `엑셀 반영 ${L.date} ${L.time}` : '재고 수정';
+    const r = await ghApi('/contents/data.json', {method: 'PUT', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(Object.assign({message: `재고 자료 저장 #${rev} · ${what}`, content: b64e(JSON.stringify(S))}, sha ? {sha} : {}))});
+    if (r.status === 409 || r.status === 422){ retry = 1500; throw new Error('conflict'); }
+    if (r.status === 401 || r.status === 403) throw new Error('auth');
+    if (!r.ok) throw new Error('net');
+    SY.rev = rev; SY.dirty = SYNC.seq !== seq; saveSync(); persist();
+    if (SY.dirty) retry = 300;
+    SYNC.remote = true; SYNC.state = 'shared'; SYNC.at = new Date(); SYNC.msg = '';
+  } catch(e){
+    SYNC.state = 'error'; SYNC.msg = e.message === 'auth' ? '공유 저장 권한 오류(토큰 확인)' : '공유 저장 실패 · 잠시 후 다시 시도';
+    if (e.message !== 'auth' && !retry) retry = 30000;
+  }
+  SYNC.busy = false; renderConn();
+  if (retry) schedulePush(retry);
+}
+async function connectSync(token){
+  token = String(token || '').trim();
+  if (!token){ toast('토큰을 붙여 넣으세요'); return; }
+  try {
+    const r = await ghApi('', {}, token);
+    if (r.status === 401) return toast('토큰이 올바르지 않습니다. 다시 복사해 붙여 넣으세요');
+    if (r.status === 404) return toast(`토큰으로 ${syncRepo()} 저장소를 볼 수 없습니다. 저장소 선택을 확인하세요`);
+    if (!r.ok) return toast('GitHub에 연결하지 못했습니다. 잠시 후 다시 시도하세요');
+    const j = await r.json();
+    if (j.permissions && j.permissions.push === false) return toast('이 토큰에는 쓰기 권한이 없습니다. Contents를 Read and write로 만들어 주세요');
+  } catch(e){ return toast('GitHub에 연결하지 못했습니다. 인터넷 연결을 확인하세요'); }
+  SY.token = token; saveSync();
+  toast('공유 저장을 켰습니다');
+  await syncPull(); render();
+}
+function disconnectSync(){ delete SY.token; saveSync(); SYNC.state = SYNC.remote ? 'view' : 'local'; render(); toast('이 브라우저의 공유 저장 권한을 지웠습니다'); }
+function syncCard(){
+  const on = !!SY.token;
+  return `<div class="card" style="margin-top:16px"><h2>공유 저장</h2>
+    <p class="sub">${on ? `켜짐 · 이 브라우저에서 바꾼 재고가 <b>${esc(syncRepo())}</b> 저장소의 data.json에 바로 저장되고, 다른 사람 화면도 1~2분 안에 자동으로 바뀝니다.`
+      : '켜면 엑셀을 올린 결과가 모든 사람(PC·휴대폰) 화면에 똑같이 보입니다. 엑셀을 올리는 PC에서 한 번만 설정하면 됩니다.'}</p>
+    ${on ? `<div class="bar" style="margin:0"><span class="muted">${SYNC.state === 'error' ? esc(SYNC.msg) : SYNC.at ? `마지막 동기화 ${pad(SYNC.at.getHours())}:${pad(SYNC.at.getMinutes())}` : ''}</span><span class="sp"></span><button class="btn" id="syNow">지금 동기화</button><button class="btn" id="syOff">이 브라우저에서 끄기</button></div>`
+    : `<ol class="sync-steps">
+        <li>GitHub에 로그인 → 오른쪽 위 프로필 → <b>Settings</b> → 맨 아래 <b>Developer settings</b> → <b>Personal access tokens</b> → <b>Fine-grained tokens</b> → <b>Generate new token</b></li>
+        <li>Expiration은 원하는 기간, <b>Repository access</b>는 <b>Only select repositories</b>에서 <b>${esc(syncRepo().split('/')[1])}</b>만 선택</li>
+        <li><b>Permissions → Repository permissions → Contents</b>를 <b>Read and write</b>로 바꾸고 <b>Generate token</b></li>
+        <li>만들어진 토큰(github_pat_로 시작)을 복사해 아래에 붙여 넣기</li></ol>
+      <div class="bar" style="margin:12px 0 0"><input type="password" id="syTok" placeholder="github_pat_…" autocomplete="off" style="flex:1;min-width:200px"><button class="btn pri" id="syOn">공유 저장 켜기</button></div>
+      <p class="sub" style="margin:8px 0 0">토큰은 이 브라우저에만 보관되고 공유 자료(data.json)에는 들어가지 않습니다. 다른 사람은 설정 없이 사이트만 열면 됩니다.</p>`}</div>`;
+}
+function bindSync(){
+  const on = $('#syOn'); if (on) on.onclick = () => connectSync($('#syTok').value);
+  const off = $('#syOff'); if (off) off.onclick = disconnectSync;
+  const now = $('#syNow'); if (now) now.onclick = async () => { await syncPull(); if (SY.dirty) await syncPush(); render(); toast('동기화했습니다'); };
+}
+const months = () => Object.keys(S.months).sort();
+const saved = loadUI();
+const UI = {
+  tab: ['live','dash','month','trend','entry','upload','master','check'].includes(saved.tab) ? saved.tab : 'live',
+  month: null, mode: saved.mode === 'today' ? 'today' : 'month',
+  fCat: '', fSt: '', q: '', sort: {k:'idx', dir:1}, prio: 'risk',
+  tCat: '', tKey: '', E: null, confirm: '',
+  U: null, UP: {month: null, field: 'zb', dates: 'fill', zero: false, newCat: '미분류'}
+};
+UI.month = (saved.month && S.months[saved.month]) ? saved.month : months().slice(-1)[0];
+try { const h = location.hash.replace('#',''); if (['live','dash','month','trend','entry','upload','master','check'].includes(h)) UI.tab = h; } catch(e){}
+
+/* ---------- 계산 ---------- */
+const baseOf = m => UI.mode === 'today' ? todayStr() : (S.months[m]?.base || monthEnd(m));
+function calc(r, base){
+  const has = !(r.zb == null && r.biz == null && r.tot == null);
+  const sum = (+r.zb || 0) + (+r.biz || 0);
+  const tot = r.tot != null ? r.tot : (has ? sum : null);
+  const days = r.exp ? dayDiff(base, r.exp) : null;
+  let st = '';
+  if (tot !== null){
+    if (tot === 0) st = '재고없음';
+    else if (days === null) st = '미입력';
+    else if (days < 0) st = '만료';
+    else if (days <= 60) st = '위험';
+    else if (days <= 180) st = '경고';
+    else st = '정상';
+  }
+  return {tot, days, st, mism: r.tot != null && r.tot !== sum};
+}
+const rowsOf = m => S.months[m]?.rows || [];
+function prevMonth(m){ const l = months().filter(x => x < m); return l.length ? l[l.length-1] : null; }
+function findByKey(m, key){ return rowsOf(m).find(r => norm(r.name) === key); }
+function enrich(m, base){
+  const pm = prevMonth(m);
+  return rowsOf(m).map((r, i) => {
+    const c = calc(r, base);
+    let prev = null;
+    if (pm){ const p = findByKey(pm, norm(r.name)); if (p) prev = calc(p, S.months[pm].base).tot; }
+    const delta = (c.tot !== null && prev !== null) ? c.tot - prev : null;
+    return {r, i, ...c, prev, delta, key: norm(r.name)};
+  });
+}
+function series(key){ // 품목의 월별 이력
+  return months().map(m => {
+    const r = findByKey(m, key);
+    return r ? {m, r, ...calc(r, S.months[m].base)} : null;
+  }).filter(Boolean);
+}
+function outlook(e, m){ // 소진 전망 (단순 평균 출고 추정)
+  if (e.tot === null || e.tot <= 0 || e.days === null || e.days < 0) return null;
+  const hist = series(e.key).filter(x => x.m <= m && x.tot !== null);
+  if (hist.length < 2) return null;
+  const a = hist[0], b = hist[hist.length-1];
+  const span = dayDiff(S.months[a.m].base, S.months[b.m].base);
+  if (span <= 0) return null;
+  const perMonth = (a.tot - b.tot) / (span / 30);
+  if (perMonth <= 0) return {perMonth: 0, need: null};
+  const need = Math.round(b.tot / perMonth * 30);
+  return {perMonth, need, late: need > e.days};
+}
+function monthSummary(m, base){
+  const list = enrich(m, base);
+  let tot = 0, zb = 0, biz = 0; const cnt = {};
+  list.forEach(e => { if (e.tot !== null) tot += e.tot; zb += +e.r.zb||0; biz += +e.r.biz||0; if (e.st) cnt[e.st] = (cnt[e.st]||0) + 1; });
+  return {list, tot, zb, biz, cnt};
+}
+function logAdd(month, name, action, detail){
+  S.log.unshift({t: new Date().toISOString(), month, name, action, detail});
+  if (S.log.length > 300) S.log.length = 300;
+}
+
+/* ---------- 공통 UI ---------- */
+let toastT;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(()=>{t.style.display='none';}, 2200); }
+async function copyText(text, okMsg='복사했습니다'){
+  try { await navigator.clipboard.writeText(text); toast(okMsg); }
+  catch(e){
+    $('#modalRoot').innerHTML = `<div class="modal" data-close><div class="card"><h2>아래 내용을 선택해 복사하세요</h2><p class="sub">이 화면에서는 자동 복사가 허용되지 않았습니다.</p><textarea id="fallbackTa" rows="10" class="mono" readonly>${esc(text)}</textarea><div class="bar" style="margin:12px 0 0"><span class="sp"></span><button class="btn pri" data-close>닫기</button></div></div></div>`;
+    const ta = $('#fallbackTa'); ta.focus(); ta.select();
+  }
+}
+document.addEventListener('click', e => {
+  const c = e.target.closest('[data-close]');
+  if (c && (c.classList.contains('btn') || e.target === c)) $('#modalRoot').innerHTML = '';
+});
+function setTip(html, x, y){
+  const t = $('#tip'); t.innerHTML = html; t.style.display = 'block';
+  const w = t.offsetWidth, h = t.offsetHeight;
+  let left = x + 14, top = y + 14;
+  if (left + w > innerWidth - 8) left = x - w - 14;
+  if (top + h > innerHeight - 8) top = y - h - 14;
+  t.style.left = Math.max(8, left) + 'px'; t.style.top = Math.max(8, top) + 'px';
+}
+const hideTip = () => { $('#tip').style.display = 'none'; };
+document.addEventListener('pointermove', e => {
+  const el = e.target.closest && e.target.closest('[data-tip]');
+  if (el) setTip(el.getAttribute('data-tip'), e.clientX, e.clientY); else if (!e.target.closest('.chart')) hideTip();
+});
+document.addEventListener('pointerleave', hideTip);
+
+function niceMax(v){
+  if (v <= 0) return 10;
+  const p = Math.pow(10, Math.floor(Math.log10(v))), f = v / p;
+  const n = f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10;
+  return n * p;
+}
+/* 선 차트: 하나의 축, 직접 라벨, 호버 십자선 */
+function lineChart(id, labels, ser, opts={}){
+  const html = `<div class="chart" id="${id}"></div>`;
+  const bind = () => {
+    const root = $('#'+id); if (!root) return;
+    const W = Math.max(280, Math.min(root.clientWidth || 640, 980));
+    const small = W < 520;
+    const H = small ? 230 : 260, pl = small ? 44 : 54, pr = small ? 64 : 100, pt = 14, pb = 28;
+    const all = ser.flatMap(s => s.vals).filter(v => v !== null && v !== undefined);
+    const max = niceMax(Math.max(...all, 1));
+    const n = labels.length;
+    const x = i => n === 1 ? pl + (W-pl-pr)/2 : pl + i * (W-pl-pr) / (n-1);
+    const y = v => pt + (H-pt-pb) * (1 - v / max);
+    let g = '';
+    for (let k = 0; k <= 4; k++){
+      const v = max / 4 * k, yy = y(v);
+      g += `<line class="gl" x1="${pl}" x2="${W-pr}" y1="${yy}" y2="${yy}"/><text x="${pl-8}" y="${yy+4}" text-anchor="end" class="num">${fmt(Math.round(v))}</text>`;
+    }
+    labels.forEach((l, i) => { g += `<text x="${x(i)}" y="${H-8}" text-anchor="${n>1&&i===0?'start':n>1&&i===n-1?'end':'middle'}" dx="${n>1&&i===0?-4:n>1&&i===n-1?4:0}">${esc(l)}</text>`; });
+    let paths = '', marks = '', ends = [];
+    ser.forEach(s => {
+      let d = '', pen = false;
+      s.vals.forEach((v, i) => { if (v === null || v === undefined){ pen = false; return; } d += `${pen?'L':'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`; pen = true; });
+      if (s.area && s.vals.every(v => v !== null) && n > 1){
+        paths += `<path d="${d}L${x(n-1)},${y(0)}L${x(0)},${y(0)}Z" fill="${s.color}" opacity=".10"/>`;
+      }
+      paths += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.w||2}" stroke-linejoin="round" stroke-linecap="round"/>`;
+      s.vals.forEach((v, i) => { if (v !== null && v !== undefined) marks += `<circle cx="${x(i)}" cy="${y(v)}" r="${i===n-1?5:3.5}" fill="${s.color}" stroke="var(--surface)" stroke-width="2"/>`; });
+      const last = s.vals.map((v,i)=>[v,i]).filter(a=>a[0]!==null&&a[0]!==undefined).pop();
+      if (last) ends.push({y: y(last[0]), name: s.name, color: s.color});
+    });
+    ends.sort((a,b) => a.y - b.y);
+    for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i-1].y < 15) ends[i].y = ends[i-1].y + 15;
+    const lab = ends.map(e => `<text x="${W-pr+10}" y="${e.y+4}" style="fill:var(--ink);font-weight:600">${esc(e.name)}</text>`).join('');
+    root.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(opts.aria||'추이 차트')}">${g}${paths}<line class="ax" id="${id}x" x1="0" x2="0" y1="${pt}" y2="${H-pb}" style="display:none"/>${marks}${lab}<rect id="${id}r" x="${pl-14}" y="${pt}" width="${W-pl-pr+28}" height="${H-pt-pb}" fill="transparent"/></svg>`;
+    const svg = $('svg', root), rect = $('#'+id+'r'), xl = $('#'+id+'x');
+    const move = ev => {
+      const b = svg.getBoundingClientRect(), px = (ev.clientX - b.left) / b.width * W;
+      let bi = 0, bd = 1e9; for (let i = 0; i < n; i++){ const dd = Math.abs(x(i) - px); if (dd < bd){ bd = dd; bi = i; } }
+      xl.setAttribute('x1', x(bi)); xl.setAttribute('x2', x(bi)); xl.style.display = '';
+      const rows = ser.map(s => `<div><span class="sw" style="background:${s.color}"></span> ${esc(s.name)} <b class="num">${s.vals[bi] === null || s.vals[bi] === undefined ? '–' : fmt(s.vals[bi])}</b></div>`).join('');
+      setTip(`<div style="font-weight:700;margin-bottom:3px">${esc(opts.full ? opts.full[bi] : labels[bi])}</div>${rows}`, ev.clientX, ev.clientY);
+    };
+    rect.addEventListener('pointermove', move); rect.addEventListener('pointerdown', move);
+    rect.addEventListener('pointerleave', () => { xl.style.display = 'none'; hideTip(); });
+  };
+  return {html, bind};
+}
+function spark(vals, color){
+  const v = vals.filter(a => a !== null); if (v.length < 2) return '<span class="muted">–</span>';
+  const W = 72, H = 22, mx = Math.max(...vals.filter(a=>a!==null)), mn = Math.min(...vals.filter(a=>a!==null));
+  const rng = mx - mn || 1, n = vals.length;
+  const pts = vals.map((a,i) => a === null ? null : [4 + i*(W-8)/(n-1), H-4 - (a-mn)/rng*(H-8)]).filter(Boolean);
+  const last = pts[pts.length-1];
+  return `<svg class="spark" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true"><polyline points="${pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="${color||'var(--s1)'}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${last[0]}" cy="${last[1]}" r="3" fill="${color||'var(--s1)'}" stroke="var(--surface)" stroke-width="1.5"/></svg>`;
+}
+
+/* ---------- 헤더·탭 ---------- */
+const TABS = [['live','실시간 재고'],['dash','대시보드'],['month','월간 재고'],['trend','품목별 추이'],['entry','재고 입력'],['master','기준정보'],['check','점검·기록']];
+function renderTabs(){
+  $('#tabs').innerHTML = TABS.map(([k,l]) => `<button class="tab" role="tab" id="tab-${k}" aria-selected="${UI.tab===k}" data-tab="${k}">${l}</button>`).join('');
+}
+function renderConn(){
+  const n = rowsOf(UI.month).length;
+  const t = lastSaved ? `${pad(lastSaved.getHours())}:${pad(lastSaved.getMinutes())} 저장` : '자동 저장';
+  const hm = d => d ? `${pad(d.getHours())}:${pad(d.getMinutes())}` : '';
+  const st = SYNC.state;
+  $('#connLine').innerHTML = st === 'shared' ? `<span class="dotc on"></span><b>공유 저장소</b> · 모두 같은 재고 · ${hm(SYNC.at)} 동기화`
+    : st === 'saving' ? `<span class="dotc sync"></span><b>공유 저장 중…</b>`
+    : st === 'view' ? `<span class="dotc on"></span><b>공유 재고 보기</b> · ${hm(SYNC.at)} 최신 확인${SY.dirty ? ' · 이 PC에서 고친 내용은 공유되지 않음' : ''}`
+    : st === 'error' ? `<span class="dotc err"></span><b>${esc(SYNC.msg || '공유 저장 실패')}</b> · 이 브라우저에는 저장됨`
+    : storeOK ? `<span class="dotc on"></span><b>이 브라우저에 저장</b> · ${months().length}개월 · ${t} · <a href="#check" data-tab="check" style="color:var(--brand);font-weight:600">공유 설정</a>`
+    : `<span class="dotc off"></span><b>임시 저장</b> · 이 환경에서는 저장되지 않아 새로고침하면 초기화됩니다`;
+  const now = new Date(), y = now.getFullYear(), mo = now.getMonth()+1, d3 = thirdMonday(y, mo);
+  const isPast = now.getDate() > d3, isToday = now.getDate() === d3;
+  $('#meetLine').innerHTML = `<span class="meeting">${mo}월 유통 회의 ${mo}/${d3}(월)${isToday?' · 오늘':isPast?' · 종료':''}</span>`;
+}
+function monthBar(extra=''){
+  const opts = months().map(m => `<option value="${m}" ${m===UI.month?'selected':''}>${mLabel(m)}</option>`).join('');
+  const b = baseOf(UI.month);
+  return `<div class="bar">
+    <div class="field"><label for="selMonth">관리월</label><select id="selMonth" style="min-width:140px">${opts}</select></div>
+    <div class="field"><span class="lbl">잔여일 기준일</span>
+      <div class="seg" role="group" aria-label="기준일 방식"><button data-mode="month" aria-pressed="${UI.mode==='month'}">월 기준일 ${dot(S.months[UI.month].base).slice(5)}</button><button data-mode="today" aria-pressed="${UI.mode==='today'}">오늘 ${dot(todayStr()).slice(5)}</button></div></div>
+    <div class="field"><label for="baseDate">월 기준일 변경</label><input type="date" id="baseDate" value="${esc(S.months[UI.month].base)}" style="min-width:150px"></div>
+    <span class="muted" style="align-self:flex-end;padding-bottom:10px">${monthNote(UI.month)}</span>
+    <span class="sp"></span>${extra}</div>`;
+}
+function monthNote(m){ // 월별 자료가 어느 파일 기준인지
+  const sr = S.months[m] && S.months[m].src, live = liveInfo().month === m;
+  if (!sr) return `수기 입력 자료 · 기준일 ${dot(S.months[m].base)}`;
+  return live ? `이지어드민 ${dot(sr.date)} 기준 · 이번 달은 올릴 때마다 갱신` : `월말 기준 · 이지어드민 ${dot(sr.date)} 마지막 파일`;
+}
+
+/* ---------- 대시보드 ---------- */
+function viewDash(){
+  const m = UI.month, base = baseOf(m), sm = monthSummary(m, base), pm = prevMonth(m);
+  const prevSum = pm ? monthSummary(pm, S.months[pm].base) : null;
+  const dTot = prevSum ? sm.tot - prevSum.tot : null;
+  const dPct = prevSum && prevSum.tot ? dTot / prevSum.tot * 100 : null;
+  const risk = sm.list.filter(e => e.st === '위험' || e.st === '만료');
+  const warn = sm.list.filter(e => e.st === '경고');
+  const stocked = sm.list.filter(e => e.tot > 0).length;
+  const top3 = [...sm.list].sort((a,b) => (b.tot||0) - (a.tot||0)).slice(0,3);
+  const top3Share = sm.tot ? top3.reduce((a,e)=>a+(e.tot||0),0) / sm.tot * 100 : 0;
+  const late = sm.list.map(e => ({e, o: outlook(e, m)})).filter(x => x.o && x.o.late).sort((a,b) => (a.e.days - a.o.need) - (b.e.days - b.o.need));
+  const zbShare = sm.tot ? sm.zb / (sm.zb + sm.biz || 1) * 100 : 0;
+
+  /* 상태 분포 */
+  const total = sm.list.filter(e => e.st).length || 1;
+  const sbar = STATUS.map(s => (sm.cnt[s]||0) ? `<span data-tip="<b>${s}</b> ${sm.cnt[s]}개 품목" style="flex:${sm.cnt[s]};background:var(--${{정상:'ok-bg',경고:'warn-bg',위험:'danger-bg',만료:'exp-bg',재고없음:'none-bg'}[s]});box-shadow:inset 0 0 0 1px var(--${{정상:'ok-fg',경고:'warn-fg',위험:'danger-fg',만료:'exp-fg',재고없음:'none-fg'}[s]})"></span>` : '').join('');
+  const slegend = STATUS.map(s => `<button class="pill p-${s}" data-go-status="${s}" style="border:0">${`<i aria-hidden="true">${GLYPH[s]}</i>`}${s} <b class="num">${sm.cnt[s]||0}</b></button>`).join(' ');
+
+  /* 구분별 */
+  const byCat = {};
+  sm.list.forEach(e => { const c = e.r.cat; byCat[c] = byCat[c] || {zb:0, biz:0, n:0}; byCat[c].zb += +e.r.zb||0; byCat[c].biz += +e.r.biz||0; byCat[c].n++; if (e.mism){ byCat[c].zb += 0; } });
+  const cats = Object.entries(byCat).map(([c,v]) => ({c, ...v, t: v.zb+v.biz})).sort((a,b) => b.t - a.t);
+  const mx = Math.max(...cats.map(c=>c.t), 1);
+  const catBars = cats.map(c => `<div class="hb"><div style="font-weight:600">${esc(c.c)}</div>
+    <div class="tr stk" style="width:${Math.max(c.t/mx*100,1)}%">${c.zb?`<span data-tip="<b>${esc(c.c)}</b> 지브레인 ${fmt(c.zb)}" style="flex:${c.zb};background:var(--s1);border-radius:4px 0 0 4px;${c.biz?'':'border-radius:4px;'}"></span>`:''}${c.biz?`<span data-tip="<b>${esc(c.c)}</b> 사업단 ${fmt(c.biz)}" style="flex:${c.biz};background:var(--s2);border-radius:${c.zb?'0 4px 4px 0':'4px'}"></span>`:''}</div>
+    <div class="t num">${fmt(c.t)}</div></div>`).join('');
+
+  /* 추이 */
+  const ms = months();
+  const trendVals = ms.map(x => monthSummary(x, S.months[x].base).tot);
+  const tc = lineChart('chTot', ms.map(mShort), [{name:'총 보유재고', color:'var(--s1)', vals:trendVals, area:true}], {full: ms.map(mLabel), aria:'월별 총 보유재고 추이'});
+
+  /* 우선 조치 */
+  const prioList = UI.prio === 'risk' ? risk : warn.sort((a,b) => a.days - b.days);
+  prioList.sort((a,b) => a.days - b.days);
+  const prioRows = prioList.map(e => {
+    const o = outlook(e, m);
+    const ol = o ? (o.need === null ? '<span class="muted">출고 없음</span>' : `<span class="num">${o.need}일</span> ${o.late ? '<span class="pill p-위험" style="padding:0 7px">지연 우려</span>' : '<span class="pill p-정상" style="padding:0 7px">여유</span>'}`) : '<span class="muted">이력 부족</span>';
+    return `<tr><td class="nm">${esc(e.r.name)}<div class="muted" style="font-weight:400;font-size:12px">${esc(e.r.cat)}</div></td><td>${pill(e.st)}</td><td class="r num">${e.days}일</td><td class="r num">${fmt(e.tot)}</td><td>${ol}</td><td class="plan">${esc(e.r.plan||'미작성')}</td></tr>`;
+  }).join('');
+
+  /* 소진 전망 */
+  const cov = sm.list.map(e => ({e, o: outlook(e, m)})).filter(x => x.o && x.o.need !== null).sort((a,b) => (b.o.need - b.e.days) - (a.o.need - a.e.days)).slice(0, 8);
+  const covMax = Math.max(...cov.map(x => Math.max(x.o.need, x.e.days)), 1);
+  const covRows = cov.map(({e,o}) => `<tr><td class="nm">${esc(e.r.name)}</td>
+    <td class="r num">${fmt(e.tot)}</td><td class="r num">${fmt(Math.round(o.perMonth))}</td>
+    <td><div class="cov"><div data-tip="잔여일 ${e.days}일" style="width:${e.days/covMax*100}%;background:var(--muted);opacity:.55"></div><div data-tip="소진 예상 ${o.need}일" style="width:${o.need/covMax*100}%;background:${o.late?'var(--danger-fg)':'var(--s1)'}"></div></div></td>
+    <td class="r num">${e.days} / ${o.need}일</td><td>${o.late?'<span class="pill p-위험"><i>▲</i>소진 지연 우려</span>':'<span class="pill p-정상"><i>✓</i>기한 내 소진</span>'}</td></tr>`).join('');
+
+  const insights = [];
+  if (dTot !== null) insights.push(`총 보유재고 <b>${fmt(sm.tot)}</b>으로 전월 대비 <b>${signed(dTot)}</b>(${dPct>0?'+':''}${dPct.toFixed(1)}%) 변동 상황`);
+  insights.push(`소비기한 60일 이내 <b>위험·만료 ${risk.length}개 품목</b>, 61~180일 <b>경고 ${warn.length}개 품목</b> 관리 대상`);
+  if (top3.length) insights.push(`재고 상위 3개 품목(${top3.map(e=>esc(norm(e.r.name))).join(', ')})이 전체의 <b>${top3Share.toFixed(0)}%</b>를 차지하는 쏠림 상황`);
+  if (late.length) insights.push(`월평균 출고 추세 기준 <b>${late.length}개 품목</b>이 소비기한 내 소진이 어려운 상황 (${late.slice(0,3).map(x=>esc(norm(x.e.r.name))).join(', ')} 등)`);
+
+  const html = `${monthBar(`<button class="btn" id="btnBrief">유통 회의 요약 복사</button>`)}
+  <div class="grid g4" style="margin-bottom:16px">
+    <div class="card kpi"><div class="k">총 보유재고</div><div class="v num">${fmt(sm.tot)}</div><div class="d">${dTot===null?'비교할 전월 자료 없음':`전월 대비 <b class="num">${arrow(dTot)} ${fmt(Math.abs(dTot))}</b> (${dPct>0?'+':''}${dPct.toFixed(1)}%)`}</div></div>
+    <div class="card kpi"><div class="k">관리 품목</div><div class="v num">${sm.list.length}<span style="font-size:15px;font-weight:600;color:var(--muted)"> 개</span></div><div class="d">재고 보유 ${stocked}개 · 재고없음 ${sm.cnt['재고없음']||0}개</div></div>
+    <div class="card kpi"><div class="k">지브레인 · 사업단 보유</div><div class="v num">${zbShare.toFixed(0)}<span style="font-size:15px;font-weight:600;color:var(--muted)">% : ${(100-zbShare).toFixed(0)}%</span></div><div class="d num">${fmt(sm.zb)} · ${fmt(sm.biz)}</div></div>
+    <div class="card kpi"><div class="k">우선 조치 대상</div><div class="v num" style="color:${risk.length?'var(--danger-fg)':'var(--ink)'}">${risk.length}<span style="font-size:15px;font-weight:600;color:var(--muted)"> 개</span></div><div class="d">위험·만료 / 경고 ${warn.length}개 추가 관리</div></div>
+  </div>
+  <div class="card" style="margin-bottom:16px"><h2>${mLabel(m)} 핵심 요약</h2><p class="sub">기준일 ${dot(base)} · 입력된 월별 자료로 자동 작성</p><ul class="insight">${insights.map(t=>`<li>${t}</li>`).join('')}</ul></div>
+  <div class="grid g2" style="margin-bottom:16px">
+    <div class="card"><h2>관리상태 분포</h2><p class="sub">잔여일 기준: 위험 0~60일 · 경고 61~180일 · 정상 181일 이상</p>
+      <div class="sbar" role="img" aria-label="관리상태 분포">${sbar}</div><div class="legend" style="gap:8px">${slegend}</div>
+      <div class="tw" style="margin-top:14px"><table><thead><tr><th>상태</th><th>잔여일</th><th>관리 원칙</th><th class="r">품목</th></tr></thead><tbody>${STATUS.slice().reverse().map(s=>`<tr><td>${pill(s)}</td><td>${RULE[s].days}</td><td style="white-space:normal;min-width:170px">${RULE[s].rule}</td><td class="r num">${sm.cnt[s]||0}</td></tr>`).join('')}</tbody></table></div></div>
+    <div class="card"><h2>총 보유재고 월별 추이</h2><p class="sub">월 단위 합계 · 신규 등록 품목 포함</p>${tc.html}</div>
+  </div>
+  <div class="grid g2" style="margin-bottom:16px">
+    <div class="card"><h2>구분별 보유재고</h2><p class="sub">지브레인 재고와 사업단 재고 구성</p>
+      <div class="legend" style="margin:0 0 6px"><span><i class="sw" style="background:var(--s1)"></i>지브레인</span><span><i class="sw" style="background:var(--s2)"></i>사업단</span></div>${catBars}</div>
+    <div class="card"><h2>전월 대비 변동 상위</h2><p class="sub">${pm?`${mLabel(pm)} → ${mLabel(m)}`:'전월 자료 없음'}</p>${deltaList(sm.list)}</div>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="sec-title"><h2>우선 조치 대상</h2><div class="seg" style="margin-left:auto"><button data-prio="risk" aria-pressed="${UI.prio==='risk'}">위험·만료 ${risk.length}</button><button data-prio="warn" aria-pressed="${UI.prio==='warn'}">경고 ${warn.length}</button></div></div>
+    <div class="tw">${prioList.length?`<table><thead><tr><th>상품명</th><th>상태</th><th class="r">잔여일</th><th class="r">총 보유재고</th><th>소진 전망</th><th>유통 실행계획</th></tr></thead><tbody>${prioRows}</tbody></table>`:'<div class="empty">해당 상태의 품목이 없습니다.</div>'}</div></div>
+  <div class="card"><h2>소비기한 내 소진 전망</h2><p class="sub">입력된 월별 재고의 평균 감소량으로 추정한 값입니다. 입고·생산이 있으면 실제와 다를 수 있습니다. 지연 우려가 큰 순서로 상위 8개를 보여 줍니다.</p>
+    <div class="tw">${cov.length?`<table><thead><tr><th>상품명</th><th class="r">총 보유재고</th><th class="r">월평균 출고(추정)</th><th>잔여일 · 소진 예상</th><th class="r">잔여 / 예상</th><th>판정</th></tr></thead><tbody>${covRows}</tbody></table>`:'<div class="empty">2개월 이상 이력이 있는 품목이 없습니다.</div>'}</div>
+    <div class="legend"><span><i class="sw" style="background:var(--muted);opacity:.55"></i>잔여일</span><span><i class="sw" style="background:var(--s1)"></i>소진 예상(기한 내)</span><span><i class="sw" style="background:var(--danger-fg)"></i>소진 예상(기한 초과)</span></div></div>`;
+  return {html, after(){ tc.bind(); $('#btnBrief').onclick = () => copyText(briefText(m, base, sm, risk, warn, late, dTot, dPct), '회의 요약을 복사했습니다'); }};
+}
+function deltaList(list){
+  const d = list.filter(e => e.delta !== null && e.delta !== 0);
+  if (!d.length) return '<div class="empty">비교 가능한 변동이 없습니다.</div>';
+  const mx = Math.max(...d.map(e => Math.abs(e.delta)));
+  const dn = [...d].sort((a,b) => a.delta - b.delta).slice(0,4);
+  const up = [...d].sort((a,b) => b.delta - a.delta).filter(e => e.delta > 0).slice(0,2);
+  const row = e => `<div class="hb" style="grid-template-columns:minmax(0,1fr) 110px 74px"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(e.r.name)}">${esc(norm(e.r.name))}</div><div class="tr" style="height:12px"><span data-tip="<b>${esc(norm(e.r.name))}</b> ${signed(e.delta)}" style="width:${Math.max(Math.abs(e.delta)/mx*100,3)}%;background:${e.delta<0?'var(--muted)':'var(--s1)'};border-radius:3px;opacity:${e.delta<0?.6:1}"></span></div><div class="t num delta">${arrow(e.delta)} ${fmt(Math.abs(e.delta))}</div></div>`;
+  return `<div class="lbl" style="margin-top:2px">감소(출고·소진)</div>${dn.map(row).join('')}${up.length?`<div class="lbl" style="margin-top:12px">증가(입고·신규)</div>${up.map(row).join('')}`:''}`;
+}
+function briefText(m, base, sm, risk, warn, late, dTot, dPct){
+  const L = [];
+  L.push(`[${mLabel(m)} 재고·유통 현황] 기준일 ${dot(base)}`);
+  L.push(`- 총 보유재고 ${fmt(sm.tot)} (지브레인 ${fmt(sm.zb)} / 사업단 ${fmt(sm.biz)})${dTot!==null?`, 전월 대비 ${signed(dTot)} (${dPct>0?'+':''}${dPct.toFixed(1)}%)`:''}`);
+  L.push(`- 관리상태: ${STATUS.map(s => `${s} ${sm.cnt[s]||0}`).join(' · ')}`);
+  if (risk.length){ L.push(`- 위험·만료 품목`); risk.sort((a,b)=>a.days-b.days).forEach(e => L.push(`  · ${e.r.name} / 잔여 ${e.days}일 / 재고 ${fmt(e.tot)} / ${e.r.plan||'실행계획 미작성'}`)); }
+  if (warn.length){ L.push(`- 경고 품목(${warn.length}개) 중 잔여일 짧은 순`); warn.sort((a,b)=>a.days-b.days).slice(0,5).forEach(e => L.push(`  · ${e.r.name} / 잔여 ${e.days}일 / 재고 ${fmt(e.tot)}`)); }
+  if (late.length){ L.push(`- 소비기한 내 소진 지연 우려(추세 추정)`); late.slice(0,5).forEach(x => L.push(`  · ${x.e.r.name} / 잔여 ${x.e.days}일 vs 소진 예상 ${x.o.need}일`)); }
+  return L.join('\n');
+}
+
+/* ---------- 월간 재고 ---------- */
+function viewMonth(){
+  const m = UI.month, base = baseOf(m), sm = monthSummary(m, base);
+  const keys = [...new Set(months().flatMap(x => rowsOf(x).map(r => norm(r.name))))];
+  const histVals = key => months().map(x => { const r = findByKey(x, key); return r ? calc(r, S.months[x].base).tot : null; });
+  let list = sm.list.filter(e =>
+    (!UI.fCat || e.r.cat === UI.fCat) && (!UI.fSt || e.st === UI.fSt) &&
+    (!UI.q || (e.r.name + ' ' + (e.r.plan||'')).toLowerCase().includes(UI.q.toLowerCase())));
+  const k = UI.sort.k, dir = UI.sort.dir;
+  const val = e => ({idx:e.i, st:STATUS.indexOf(e.st), cat:e.r.cat, name:e.r.name, tot:e.tot, zb:+e.r.zb||0, biz:+e.r.biz||0, mfg:e.r.mfg||'', exp:e.r.exp||'9999', days:e.days ?? 1e9, delta:e.delta ?? -1e9}[k]);
+  list = [...list].sort((a,b) => { const x = val(a), y = val(b); return (x > y ? 1 : x < y ? -1 : 0) * dir; });
+  const catOpts = ['<option value="">전체 구분</option>'].concat([...new Set(rowsOf(m).map(r=>r.cat))].map(c => `<option ${c===UI.fCat?'selected':''}>${esc(c)}</option>`)).join('');
+  const stOpts = ['<option value="">전체 상태</option>'].concat(STATUS.concat(['미입력']).map(s => `<option value="${s}" ${s===UI.fSt?'selected':''}>${s==='미입력'?'기한 미입력':s}</option>`)).join('');
+  const th = (key, label, cls='') => `<th class="sortable ${cls}" data-sort="${key}" aria-sort="${UI.sort.k===key?(UI.sort.dir>0?'ascending':'descending'):'none'}">${label}${UI.sort.k===key?(UI.sort.dir>0?' ▲':' ▼'):''}</th>`;
+  const body = list.map(e => {
+    const r = e.r;
+    return `<tr class="${e.st==='재고없음'?'dim':''}"><td class="num">${e.i+1}</td><td>${pill(e.st)}</td><td>${esc(r.cat)}</td>
+      <td class="nm">${esc(r.name)}${e.mism?'<span class="flag" data-tip="합계와 지브레인+사업단 재고가 다릅니다">합계 확인</span>':''}</td>
+      <td class="r num"><b>${fmt(e.tot)}</b></td><td class="r num">${fmt(r.zb)}</td><td class="r num">${fmt(r.biz)}</td>
+      <td class="num">${dot(r.mfg)}</td><td class="num">${dot(r.exp)}</td>
+      <td class="r num" style="${e.st==='위험'||e.st==='만료'?'font-weight:700;color:var(--danger-fg)':''}">${e.days===null?'–':e.days}</td>
+      <td class="r num delta">${e.delta===null?'–':`${arrow(e.delta)} ${fmt(Math.abs(e.delta))}`}</td>
+      <td>${spark(histVals(e.key), 'var(--s1)')}</td>
+      <td class="plan">${esc(r.plan||'')}</td>
+      <td><button class="btn sm" data-edit="${r.id}">수정</button></td></tr>`;
+  }).join('');
+  const shownTot = list.reduce((a,e)=>a+(e.tot||0),0), shownZb = list.reduce((a,e)=>a+(+e.r.zb||0),0), shownBiz = list.reduce((a,e)=>a+(+e.r.biz||0),0);
+  const nextOpts = S.tabs.map(t => t.tab).filter(t => !S.months[t] && t > months().slice(-1)[0]).sort();
+  const html = `${monthBar()}
+  <div class="card" style="margin-bottom:12px">
+    <div class="sec-title"><h2>${mLabel(m)} 월간 재고·유통 자료</h2><span class="muted num">기준일 ${dot(base)} · ${list.length}/${sm.list.length}개 품목</span></div>
+    <div class="bar" style="margin-bottom:12px">
+      <div class="field"><label for="fCat">구분</label><select id="fCat">${catOpts}</select></div>
+      <div class="field"><label for="fSt">관리상태</label><select id="fSt">${stOpts}</select></div>
+      <div class="field" style="flex:1;min-width:180px"><label for="fq">검색 <em>상품명·실행계획</em></label><input type="text" id="fq" value="${esc(UI.q)}" placeholder="예: 키위, 온라인몰"></div>
+      <span class="sp"></span>
+      <button class="btn" id="btnCopy">표 복사 (엑셀 붙여넣기)</button>
+      <button class="btn" id="btnNewRow">+ 품목 추가</button>
+    </div>
+    <div class="tw" style="max-height:640px"><table>
+      <thead><tr>${th('idx','순번')}${th('st','관리상태')}${th('cat','구분')}${th('name','상품명')}${th('tot','총 보유재고','r')}${th('zb','지브레인','r')}${th('biz','사업단','r')}${th('mfg','제조일자')}${th('exp','소비기한')}${th('days','잔여일','r')}${th('delta','전월 대비','r')}<th>월별 추이</th><th>유통 실행계획</th><th></th></tr></thead>
+      <tbody>${body || '<tr><td colspan="14" class="empty">조건에 맞는 품목이 없습니다.</td></tr>'}</tbody>
+      <tfoot><tr><td colspan="4">${UI.fCat||UI.fSt||UI.q?'조회 결과 합계':'전체 재고 합계'}</td><td class="r num">${fmt(shownTot)}</td><td class="r num">${fmt(shownZb)}</td><td class="r num">${fmt(shownBiz)}</td><td colspan="7"></td></tr></tfoot>
+    </table></div>
+    <div class="legend"><span class="muted">상태 열의 색과 기호로 구분합니다. 잔여일 = 소비기한 − 기준일.</span></div>
+  </div>
+  <div class="card"><div class="bar" style="margin:0"><div><h2>다음 달 자료 만들기</h2><p class="sub" style="margin:0">선택한 달의 품목·일자·실행계획을 복사해 새 월 탭을 만듭니다. 재고 수량은 비워서 시작합니다.</p></div><span class="sp"></span>
+    <select id="selNew" style="width:auto;min-width:130px">${nextOpts.map(t=>`<option value="${t}">${mLabel(t)}</option>`).join('')||'<option value="">추가할 월 없음</option>'}</select>
+    <button class="btn pri" id="btnNewMonth" ${nextOpts.length?'':'disabled'}>월 탭 만들기</button></div></div>`;
+  return {html, after(){
+    $('#btnCopy').onclick = () => {
+      const head = ['순번','관리상태','구분','상품명','총 보유재고','지브레인 재고','사업단 재고','제조일자','소비기한','잔여일','전월 대비','유통 실행계획'];
+      const lines = [head.join('\t')].concat(list.map(e => [e.i+1,e.st,e.r.cat,e.r.name,e.tot??'',e.r.zb??'',e.r.biz??'',e.r.mfg||'',e.r.exp||'',e.days??'',e.delta??'',(e.r.plan||'').replace(/\s+/g,' ')].join('\t')));
+      copyText(lines.join('\n'), `${list.length}개 행을 복사했습니다. 엑셀에 붙여넣으세요`);
+    };
+    $('#btnNewRow').onclick = () => { newEntry(); setTab('entry'); };
+    $('#btnNewMonth').onclick = () => { const t = $('#selNew').value; if (t) createMonth(t); };
+  }};
+}
+function liveInfo(){ // 지금 '실시간'으로 볼 자료: 마지막으로 올린 파일의 월 (아직 없으면 가장 최근 월간 자료)
+  const L = S.live;
+  if (L && S.months[L.month]) return {month: L.month, date: L.date, time: L.time || '', file: L.file, prev: L.prev || null, up: true};
+  const m = months().filter(x => rowsOf(x).some(r => r.zb != null)).pop() || months().pop();
+  const sr = S.months[m] && S.months[m].src;
+  return {month: m, date: sr ? sr.date : (S.months[m] && S.months[m].base) || monthEnd(m), time: sr ? sr.time : '', file: '', prev: null, up: false};
+}
+function ago(date, time){
+  const t = Date.parse(`${date}T${time || '00:00'}:00`); if (isNaN(t)) return '';
+  const mn = Math.max(0, Math.round((Date.now() - t) / 60000));
+  return mn < 2 ? '방금' : mn < 60 ? `${mn}분 전` : mn < 1440 ? `${Math.floor(mn / 60)}시간 전` : `${Math.floor(mn / 1440)}일 전`;
+}
+function viewLive(){
+  const I = liveInfo(), m = I.month, base = todayStr(), sm = monthSummary(m, base), pv = I.prev && I.prev.vals;
+  sm.list.forEach(e => { const k = sq(e.r.name); e.ld = pv && e.r.zb != null && k in pv ? (+e.r.zb) - pv[k] : null; });
+  const dSum = pv ? sm.list.reduce((a, e) => a + (e.ld || 0), 0) : null;
+  const risk = sm.list.filter(e => e.st === '위험' || e.st === '만료').length, none = sm.list.filter(e => e.st === '재고없음').length;
+  const stale = I.up ? dayDiff(I.date, base) : null;
+  let list = sm.list.filter(e => (!UI.fCat || e.r.cat === UI.fCat) && (!UI.fSt || e.st === UI.fSt) && (!UI.q || e.r.name.toLowerCase().includes(UI.q.toLowerCase())));
+  const k = UI.sort.k, dir = UI.sort.dir;
+  const val = e => ({idx:e.i, st:STATUS.indexOf(e.st), cat:e.r.cat, name:e.r.name, tot:e.tot, zb:+e.r.zb||0, biz:+e.r.biz||0, exp:e.r.exp||'9999', days:e.days ?? 1e9, delta:e.ld ?? -1e9}[k]);
+  list = [...list].sort((a, b) => { const x = val(a), y = val(b); return (x > y ? 1 : x < y ? -1 : 0) * dir; });
+  const catOpts = ['<option value="">전체 구분</option>'].concat([...new Set(rowsOf(m).map(r => r.cat))].map(c => `<option ${c === UI.fCat ? 'selected' : ''}>${esc(c)}</option>`)).join('');
+  const stOpts = ['<option value="">전체 상태</option>'].concat(STATUS.concat(['미입력']).map(s => `<option value="${s}" ${s === UI.fSt ? 'selected' : ''}>${s === '미입력' ? '기한 미입력' : s}</option>`)).join('');
+  const th = (key, label, cls = '') => `<th class="sortable ${cls}" data-sort="${key}" aria-sort="${UI.sort.k === key ? (UI.sort.dir > 0 ? 'ascending' : 'descending') : 'none'}">${label}${UI.sort.k === key ? (UI.sort.dir > 0 ? ' ▲' : ' ▼') : ''}</th>`;
+  const body = list.map(e => `<tr class="${e.st === '재고없음' ? 'dim' : ''}"><td>${pill(e.st)}</td><td>${esc(e.r.cat)}</td><td class="nm">${esc(e.r.name)}</td>
+      <td class="r num"><b>${fmt(e.r.zb)}</b></td><td class="r num delta">${e.ld === null || e.ld === 0 ? '–' : `${arrow(e.ld)} ${fmt(Math.abs(e.ld))}`}</td>
+      <td class="r num">${fmt(e.r.biz)}</td><td class="r num">${fmt(e.tot)}</td><td class="num">${dot(e.r.exp)}</td>
+      <td class="r num" style="${e.st === '위험' || e.st === '만료' ? 'font-weight:700;color:var(--danger-fg)' : ''}">${e.days === null ? '–' : e.days}</td></tr>`).join('');
+  const sZb = list.reduce((a, e) => a + (+e.r.zb || 0), 0), sBiz = list.reduce((a, e) => a + (+e.r.biz || 0), 0), sTot = list.reduce((a, e) => a + (e.tot || 0), 0);
+  const stamp = `${dot(I.date)}${I.time ? ' ' + I.time : ''}`, pvLabel = I.prev ? `${dot(I.prev.date).slice(5)}${I.prev.time ? ' ' + I.prev.time : ''}` : '';
+  const html = `<div class="card" style="margin-bottom:16px"><div class="sec-title"><h2>실시간 재고</h2>
+      <span class="muted">${I.up ? `이지어드민 ${stamp} 기준 · ${ago(I.date, I.time)} 내려받은 파일` : `월간 자료(${mLabel(m)}) 기준 · 아직 엑셀을 올리지 않았습니다`}</span></div>
+    <p class="sub" style="margin:2px 0 0">가장 최근에 올린 재고 파일 기준입니다. 소비기한 잔여일은 오늘(${dot(base).slice(5)})부터 계산합니다. 월별 자료는 '월간 재고'에서 매달 마지막 파일 기준으로 확인합니다.</p>
+    ${stale !== null && stale >= 2 ? `<div class="note w" style="margin-top:10px">마지막 업로드가 ${stale}일 전입니다. 최신 파일을 올려 주세요.</div>` : ''}
+    ${!I.up ? `<div class="note" style="margin-top:10px">오른쪽 위 <b>재고 엑셀 올리기</b>로 이지어드민 파일을 올리면 이 화면이 최신 재고로 바뀝니다.</div>` : ''}</div>
+  <div class="grid g4" style="margin-bottom:16px">
+    <div class="card kpi"><div class="k">총 보유재고</div><div class="v num">${fmt(sm.tot)}</div><div class="d num">지브레인 ${fmt(sm.zb)} · 사업단 ${fmt(sm.biz)}</div></div>
+    <div class="card kpi"><div class="k">지브레인 재고</div><div class="v num">${fmt(sm.zb)}</div><div class="d">${dSum === null ? '비교할 이전 자료 없음' : `${pvLabel} 대비 <b class="num">${dSum === 0 ? '변동 없음' : `${arrow(dSum)} ${fmt(Math.abs(dSum))}`}</b>`}</div></div>
+    <div class="card kpi"><div class="k">우선 조치 대상</div><div class="v num" style="color:${risk ? 'var(--danger-fg)' : 'var(--ink)'}">${risk}<span style="font-size:15px;font-weight:600;color:var(--muted)"> 개</span></div><div class="d">소비기한 위험·만료 (오늘 기준)</div></div>
+    <div class="card kpi"><div class="k">재고 없음</div><div class="v num">${none}<span style="font-size:15px;font-weight:600;color:var(--muted)"> 개</span></div><div class="d">관리 품목 ${sm.list.length}개 중</div></div>
+  </div>
+  <div class="card"><div class="bar" style="margin-bottom:12px">
+      <div class="field"><label for="fCat">구분</label><select id="fCat">${catOpts}</select></div>
+      <div class="field"><label for="fSt">관리상태</label><select id="fSt">${stOpts}</select></div>
+      <div class="field" style="flex:1;min-width:180px"><label for="fq">검색 <em>상품명</em></label><input type="text" id="fq" value="${esc(UI.q)}" placeholder="예: 키위, 삼계탕"></div>
+      <span class="sp"></span><button class="btn" id="btnLiveCopy">표 복사 (엑셀 붙여넣기)</button></div>
+    <div class="tw" style="max-height:640px"><table>
+      <thead><tr>${th('st', '관리상태')}${th('cat', '구분')}${th('name', '상품명')}${th('zb', '지브레인 재고', 'r')}${th('delta', I.prev ? `${pvLabel} 대비` : '직전 대비', 'r')}${th('biz', '사업단', 'r')}${th('tot', '총 보유재고', 'r')}${th('exp', '소비기한')}${th('days', '잔여일', 'r')}</tr></thead>
+      <tbody>${body || '<tr><td colspan="9" class="empty">조건에 맞는 품목이 없습니다.</td></tr>'}</tbody>
+      <tfoot><tr><td colspan="3">${UI.fCat || UI.fSt || UI.q ? '조회 결과 합계' : '전체 재고 합계'}</td><td class="r num">${fmt(sZb)}</td><td></td><td class="r num">${fmt(sBiz)}</td><td class="r num">${fmt(sTot)}</td><td colspan="2"></td></tr></tfoot>
+    </table></div>
+    <div class="legend"><span class="muted">지브레인 재고는 이지어드민 파일 값입니다. 사업단 재고는 엑셀에 없어서 가장 최근에 입력한 값을 이어받으며, '월간 재고'나 '재고 입력'에서 고치면 바뀝니다.</span></div></div>`;
+  return {html, after(){
+    $('#btnLiveCopy').onclick = () => {
+      const head = ['관리상태','구분','상품명','지브레인 재고','직전 업로드 대비','사업단 재고','총 보유재고','소비기한','잔여일'];
+      copyText([head.join('\t')].concat(list.map(e => [e.st, e.r.cat, e.r.name, e.r.zb ?? '', e.ld ?? '', e.r.biz ?? '', e.tot ?? '', e.r.exp || '', e.days ?? ''].join('\t'))).join('\n'), `${list.length}개 행을 복사했습니다. 엑셀에 붙여넣으세요`);
+    };
+  }};
+}
+function carryFrom(m, f){ // m월의 비어 있는 f칸을 이전 달 중 가장 최근 값으로 채운다 (입력된 값은 건드리지 않음). 이어받은 달을 돌려줌
+  const prev = months().filter(x => x < m).reverse(); let used = null;
+  rowsOf(m).forEach(r => {
+    if (r[f] != null) return;
+    const k = sq(r.name); if (!k) return;
+    for (const pm of prev){ const q = rowsOf(pm).find(x => sq(x.name) === k && x[f] != null); if (q){ r[f] = q[f]; used = used || pm; break; } }
+  });
+  return used;
+}
+function ensureMonth(t){ // 월 탭이 없으면 직전 달 품목을 복사해 만든다 (화면 갱신 없음)
+  if (S.months[t]) return false;
+  const pm = months().filter(x => x < t).pop() || months().pop();
+  const src = rowsOf(pm);
+  S.months[t] = {base: defBase(t), rows: src.map(r => ({id: S.nextId++, cat: r.cat, name: r.name, zb: null, biz: null, mfg: r.mfg, exp: r.exp, plan: r.plan}))};
+  logAdd(t, '-', '월 탭 생성', `${mLabel(pm)} 자료를 복사해 ${src.length}개 품목 생성`);
+  return true;
+}
+function createMonth(t){
+  ensureMonth(t);
+  UI.month = t; save(); saveUI(); render(); toast(`${mLabel(t)} 탭을 만들었습니다`);
+}
+
+/* ---------- 품목별 추이 ---------- */
+function allKeys(){
+  const map = new Map();
+  S.master.forEach(p => map.set(norm(p.name), {cat: p.cat, name: p.name}));
+  months().forEach(m => rowsOf(m).forEach(r => { const k = norm(r.name); if (!map.has(k)) map.set(k, {cat: r.cat, name: r.name}); }));
+  return map;
+}
+function viewTrend(){
+  const km = allKeys();
+  const cats = [...new Set([...km.values()].map(v => v.cat))];
+  if (!UI.tCat || !cats.includes(UI.tCat)) UI.tCat = cats.includes('양양') ? '양양' : cats[0];
+  const items = [...km.entries()].filter(([k,v]) => v.cat === UI.tCat);
+  if (!UI.tKey || !items.some(([k]) => k === UI.tKey)) UI.tKey = items[0]?.[0];
+  const key = UI.tKey, info = km.get(key);
+  const hist = series(key);
+  const allMonths = [...new Set([...S.tabs.map(t=>t.tab), ...months()])].sort();
+  const last = hist[hist.length-1], prev = hist[hist.length-2];
+  const delta = last && prev && last.tot !== null && prev.tot !== null ? last.tot - prev.tot : null;
+  const lc = hist.length ? lineChart('chItem', hist.map(h => mShort(h.m)), [
+      {name:'총 보유재고', color:'var(--total)', vals: hist.map(h=>h.tot), area:true, w:2.5},
+      {name:'지브레인', color:'var(--s1)', vals: hist.map(h=>+h.r.zb||0)},
+      {name:'사업단', color:'var(--s2)', vals: hist.map(h=>+h.r.biz||0)}], {full: hist.map(h=>mLabel(h.m)), aria: `${info.name} 재고 추이`}) : null;
+  const rows = allMonths.map((m, idx) => {
+    const h = hist.find(x => x.m === m);
+    if (!h){
+      const label = S.tabs.some(t=>t.tab===m) ? (m > months().slice(-1)[0] ? '예정' : '자료 없음') : '자료 없음';
+      return `<tr class="dim"><td class="num">${mShort(m)}</td><td colspan="7">${label}</td></tr>`;
+    }
+    const hi = hist.indexOf(h), p = hist[hi-1];
+    const d = p && h.tot !== null && p.tot !== null ? h.tot - p.tot : null;
+    return `<tr><td class="num"><b>${mShort(m)}</b></td><td class="r num"><b>${fmt(h.tot)}</b></td><td class="r num">${fmt(h.r.zb)}</td><td class="r num">${fmt(h.r.biz)}</td><td class="r num delta">${d===null?'–':`${arrow(d)} ${fmt(Math.abs(d))}`}</td><td class="num">${dot(h.r.exp)}</td><td>${pill(h.st)}</td><td class="plan">${esc(h.r.plan||'')}</td></tr>`;
+  }).join('');
+  const html = `<div class="card" style="margin-bottom:16px"><h2>${esc(info?.name||'')} 품목별 재고 추이</h2><p class="sub">구분과 상품을 고르면 월별 재고 이력이 바로 바뀝니다.</p>
+    <div class="fgrid"><div class="field"><label for="tCat">구분 선택</label><select id="tCat">${cats.map(c=>`<option ${c===UI.tCat?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
+    <div class="field" style="grid-column:span 2;min-width:0"><label for="tKey">상품 선택</label><select id="tKey">${items.map(([k,v])=>`<option value="${esc(k)}" ${k===key?'selected':''}>${esc(v.name)}</option>`).join('')}</select></div></div>
+    ${items.length && items.some(([k])=>k!==key) ? '' : ''}</div>
+  <div class="grid g4" style="margin-bottom:16px">
+    <div class="card kpi"><div class="k">최근 관리월</div><div class="v num">${last?mShort(last.m):'–'}</div><div class="d">${last?mLabel(last.m):'자료 없음'}</div></div>
+    <div class="card kpi"><div class="k">최근 총재고</div><div class="v num">${last?fmt(last.tot):'–'}</div><div class="d">지브레인 ${last?fmt(last.r.zb):'–'} · 사업단 ${last?fmt(last.r.biz):'–'}</div></div>
+    <div class="card kpi"><div class="k">전월 대비</div><div class="v num">${delta===null?'–':`${arrow(delta)} ${fmt(Math.abs(delta))}`}</div><div class="d">${prev?`${mShort(prev.m)} → ${mShort(last.m)}`:'비교할 이전 자료 없음'}</div></div>
+    <div class="card kpi"><div class="k">최근 관리상태</div><div class="v">${last?pill(last.st):'–'}</div><div class="d">${last&&RULE[last.st]?RULE[last.st].rule:'&nbsp;'}</div></div>
+  </div>
+  <div class="card" style="margin-bottom:16px"><h2>월별 재고 변화</h2><p class="sub">${hist.length<2?'이력이 1개월뿐이라 선이 아닌 점으로 표시합니다.':'지브레인·사업단 재고와 합계를 한 축에서 비교합니다.'}</p>${lc?lc.html:'<div class="empty">이 품목의 월별 자료가 없습니다.</div>'}
+    <div class="legend"><span><i class="sw" style="background:var(--total)"></i>총 보유재고</span><span><i class="sw" style="background:var(--s1)"></i>지브레인</span><span><i class="sw" style="background:var(--s2)"></i>사업단</span></div></div>
+  <div class="card"><h2>월별 상세</h2><p class="sub">기준정보에 등록된 관리월 전체를 표시합니다. 시트가 없는 달은 자료 없음으로 남깁니다.</p>
+    <div class="tw"><table><thead><tr><th>관리월</th><th class="r">총 보유재고</th><th class="r">지브레인</th><th class="r">사업단</th><th class="r">전월 대비</th><th>소비기한</th><th>관리상태</th><th>유통 실행계획</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  return {html, after(){ lc && lc.bind(); }};
+}
+
+/* ---------- 재고 입력 ---------- */
+function newEntry(cat){ UI.E = {id:null, cat:cat||'', name:'', custom:false, zb:'', biz:'', mfg:'', exp:'', plan:''}; }
+function loadEntry(id){
+  const r = rowsOf(UI.month).find(x => x.id === id); if (!r) return;
+  UI.E = {id: r.id, cat: r.cat, name: r.name, custom: false, zb: r.zb ?? '', biz: r.biz ?? '', mfg: r.mfg || '', exp: r.exp || '', plan: r.plan || ''};
+}
+function viewEntry(){
+  if (!UI.E) newEntry();
+  const E = UI.E, m = UI.month, rows = rowsOf(m);
+  const lr = E.name && S.live && S.months[S.live.month] ? findByKey(S.live.month, norm(E.name)) : null;
+  const lv = lr && lr.zb != null ? lr.zb : null, isLiveM = !!S.live && S.live.month === m;
+  const zbLock = lv !== null && isLiveM && !E.unlock;
+  if (zbLock) E.zb = String(lv);
+  const lstamp = S.live ? `${dot(S.live.date).slice(5)}${S.live.time ? ' ' + S.live.time : ''}` : '';
+  const zbHint = lv === null ? '' : zbLock ? `<span class="muted" style="font-size:12px">이지어드민 ${lstamp} 기준 자동 반영 · 엑셀을 올리면 바뀝니다. <button type="button" class="btn sm" id="btnZbUnlock">직접 수정</button></span>`
+    : isLiveM ? `<span class="muted" style="font-size:12px">직접 수정 중 · <button type="button" class="btn sm" id="btnZbLive">실시간 값(${fmt(lv)})으로 되돌리기</button></span>`
+    : `<span class="muted" style="font-size:12px">현재 실시간 재고 ${fmt(lv)}(${lstamp}) · <button type="button" class="btn sm" id="btnZbLive">이 값 사용</button></span>`;
+  const cats = [...new Set(S.master.map(p=>p.cat).concat(S.cats))];
+  const names = new Map();
+  S.master.filter(p => !E.cat || p.cat === E.cat).forEach(p => names.set(norm(p.name), p.name));
+  rows.filter(r => !E.cat || r.cat === E.cat).forEach(r => { if (!names.has(norm(r.name))) names.set(norm(r.name), r.name); });
+  const nameSel = E.id ? rows.find(r=>r.id===E.id)?.name : E.name;
+  const exMatch = !E.id && E.name && rows.find(r => norm(r.name) === norm(E.name));
+  const pk = (function(){ const r = {zb:E.zb===''?null:+E.zb, biz:E.biz===''?null:+E.biz, exp:E.exp||null, mfg:E.mfg||null, name:E.name||'신규 품목', cat:E.cat}; return r; })();
+  const c = calc(pk, baseOf(m));
+  const pm = prevMonth(m), pr = pm && E.name ? findByKey(pm, norm(E.name)) : null;
+  const pt = pr ? calc(pr, S.months[pm].base).tot : null;
+  const dl = (c.tot !== null && pt !== null) ? c.tot - pt : null;
+  const done = rows.filter(r => !(r.zb == null && r.biz == null && r.tot == null)).length;
+  const items = rows.map(r => { const ok = !(r.zb == null && r.biz == null && r.tot == null); return `<button class="it ${ok?'done':''}" data-load="${r.id}"><span class="ck" aria-hidden="true">${ok?'✓':''}</span><span class="n" title="${esc(r.name)}">${esc(r.name)}</span><span class="chip">${esc(r.cat)}</span></button>`; }).join('');
+  const hint = c.st && RULE[c.st] ? RULE[c.st].rule : '';
+  const html = `${monthBar()}
+  <div class="layout">
+   <div class="stack">
+    <form class="card" id="entryForm" autocomplete="off">
+      <h2>1. 입력 대상</h2><p class="sub">${mLabel(m)} 탭에 저장합니다. 이미 있는 품목은 불러와서 수정합니다.</p>
+      <div class="fgrid">
+        <div class="field"><label for="eBase">월 기준일</label><input type="date" id="eBase" value="${S.months[m].base}"></div>
+        <div class="field"><span class="lbl">입력 방식</span><div class="radio"><label><input type="radio" name="emode" value="pick" ${!E.custom?'checked':''}>목록에서 선택</label><label><input type="radio" name="emode" value="custom" ${E.custom?'checked':''}>새 상품 직접 입력</label></div></div>
+      </div>
+      <h2 style="margin-top:20px">2. 품목</h2>
+      <div class="fgrid" style="margin-top:10px">
+        <div class="field"><label for="eCat">구분</label><select id="eCat"><option value="">구분 선택</option>${cats.map(x=>`<option ${x===E.cat?'selected':''}>${esc(x)}</option>`).join('')}</select></div>
+        <div class="field" style="grid-column:span 2;min-width:0"><label for="eName">상품명 <em>${E.custom?'직접 입력':'목록에서 선택'}</em></label>
+          ${E.custom ? `<input type="text" id="eNameT" value="${esc(E.name)}" placeholder="예: 보성 키위주스 [27.12.31]">` :
+          `<select id="eName"><option value="">상품 선택</option>${[...names.values()].map(n=>`<option value="${esc(n)}" ${n===nameSel||(nameSel&&norm(n)===norm(nameSel))?'selected':''}>${esc(n)}</option>`).join('')}</select>`}</div>
+      </div>
+      ${exMatch?`<div class="note" style="margin-top:10px">이 달에 이미 있는 품목입니다. 저장하면 기존 입력값을 덮어씁니다. <button type="button" class="btn sm" data-load="${exMatch.id}">기존 값 불러오기</button></div>`:''}
+      <h2 style="margin-top:20px">3. 재고</h2>
+      <div class="fgrid" style="margin-top:10px">
+        <div class="field"><label for="eZb">지브레인 재고 ${zbLock?'<em>실시간 자동</em>':''}</label><input type="number" id="eZb" min="0" step="1" inputmode="numeric" value="${esc(E.zb)}" ${zbLock?'readonly style="background:var(--bg2,#f4f6f9)"':''}>${zbHint}</div>
+        <div class="field"><label for="eBiz">사업단 재고</label><input type="number" id="eBiz" min="0" step="1" inputmode="numeric" value="${esc(E.biz)}"></div>
+        <div class="field"><label for="eTot">총 보유재고 <em>자동 합산</em></label><input type="text" id="eTot" readonly value="${c.tot===null?'':fmt(c.tot)}"></div>
+      </div>
+      <h2 style="margin-top:20px">4. 일자</h2>
+      <div class="fgrid" style="margin-top:10px">
+        <div class="field"><label for="eMfg">제조일자</label><input type="date" id="eMfg" value="${E.mfg}"></div>
+        <div class="field"><label for="eExp">소비기한</label><input type="date" id="eExp" value="${E.exp}"></div>
+        <div class="field"><label for="eDays">잔여일 <em>자동 계산</em></label><input type="text" id="eDays" readonly value="${c.days===null?'':c.days+'일'}"></div>
+      </div>
+      <h2 style="margin-top:20px">5. 유통 실행계획</h2>
+      <div class="field" style="margin-top:10px"><label for="ePlan" class="lbl">실행계획 <em>${hint?`권장: ${hint}`:'채널·수량·시기를 적습니다'}</em></label><textarea id="ePlan" placeholder="예: 올잇마켓 200봉, 부천중소마트 100봉 판매">${esc(E.plan)}</textarea></div>
+      <div class="bar" style="margin:16px 0 0"><button type="submit" class="btn pri" id="btnSave">${E.id||exMatch?'수정 저장':'저장'}</button><button type="button" class="btn" id="btnNew">새 입력</button><span class="sp"></span>
+        ${E.id?`<button type="button" class="btn warn" id="btnDel">${UI.confirm==='delrow'?'삭제 확인':'삭제'}</button>`:''}</div>
+    </form>
+    <div class="card"><h2>${mLabel(m)} 입력 현황</h2><p class="sub">재고를 입력한 품목 ${done} / ${rows.length}개. 품목을 누르면 불러옵니다.</p>
+      <div class="prog" role="progressbar" aria-valuenow="${done}" aria-valuemax="${rows.length}"><span style="width:${rows.length?done/rows.length*100:0}%"></span></div><div class="items">${items}</div>
+      <p class="sub" style="margin:12px 0 0">기준 일정: ${esc(NOTE_SCHEDULE)}</p></div>
+   </div>
+   <aside class="card prev" aria-live="polite"><h2>미리보기</h2><p class="sub">저장하기 전에 월간 표에 나타날 모습을 확인합니다.</p>
+     <div class="big">${esc(norm(E.name)||'상품을 선택하세요')}</div>
+     <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">${E.cat?`<span class="chip">${esc(E.cat)}</span>`:''}${pill(c.st)}</div>
+     <dl class="kv"><dt>총 보유재고</dt><dd class="num"><b>${c.tot===null?'–':fmt(c.tot)}</b></dd>
+       <dt>전월 대비</dt><dd class="num">${dl===null?'–':`${arrow(dl)} ${fmt(Math.abs(dl))} (${mShort(pm)} ${fmt(pt)})`}</dd>
+       <dt>소비기한</dt><dd class="num">${dot(E.exp)}</dd><dt>잔여일</dt><dd class="num">${c.days===null?'–':c.days+'일'}</dd>
+       <dt>관리 원칙</dt><dd>${hint||'–'}</dd><dt>실행계획</dt><dd>${esc(E.plan)||'<span class="muted">미작성</span>'}</dd></dl>
+     ${pk.mfg && pk.exp && pk.mfg > pk.exp ? '<div class="note w" style="margin-top:12px">제조일자가 소비기한보다 늦습니다. 일자를 확인하세요.</div>' : ''}
+   </aside>
+  </div>`;
+  return {html, after(){ bindEntry(); }};
+}
+const NOTE_SCHEDULE = '해당 월 10일 전까지 마무리한 뒤 매월 셋째 주 월요일 유통 회의에 참석합니다.';
+function bindEntry(){
+  const E = UI.E, rerender = () => { const y = scrollY; render(); scrollTo(0, y); };
+  const read = () => {
+    E.zb = $('#eZb').value; E.biz = $('#eBiz').value; E.mfg = $('#eMfg').value; E.exp = $('#eExp').value; E.plan = $('#ePlan').value;
+  };
+  $$('input[name=emode]').forEach(r => r.onchange = () => { read(); E.custom = r.value === 'custom' && r.checked; if (E.custom){ E.id = null; E.name = ''; } rerender(); });
+  $('#eCat').onchange = e => { read(); E.cat = e.target.value; if (!E.id){ E.name = ''; } rerender(); };
+  const nm = $('#eName');
+  if (nm) nm.onchange = e => {
+    read(); const v = e.target.value; E.name = v;
+    const ex = rowsOf(UI.month).find(r => norm(r.name) === norm(v));
+    if (ex){ const keep = {cat: E.cat}; loadEntry(ex.id); if (keep.cat) UI.E.cat = ex.cat; }
+    else { E.id = null; const pm = prevMonth(UI.month); const p = pm && findByKey(pm, norm(v)); if (p && !E.exp){ E.exp = p.exp || ''; E.mfg = p.mfg || ''; } const mp = S.master.find(x => x.name === v); if (mp) E.cat = mp.cat; }
+    rerender();
+  };
+  const nt = $('#eNameT'); if (nt) nt.oninput = e => { E.name = e.target.value; };
+  ['eZb','eBiz','eMfg','eExp','ePlan'].forEach(id => $('#'+id).addEventListener('input', () => { read(); softPreview(); }));
+  const bu = $('#btnZbUnlock'); if (bu) bu.onclick = () => { read(); E.unlock = true; rerender(); };
+  const bl = $('#btnZbLive'); if (bl) bl.onclick = () => { read(); const r = S.live && findByKey(S.live.month, norm(E.name)); if (r && r.zb != null){ E.zb = String(r.zb); E.unlock = false; } rerender(); };
+  $('#eBase').onchange = e => { if (e.target.value){ S.months[UI.month].base = e.target.value; save(); rerender(); } };
+  $('#btnNew').onclick = () => { newEntry(E.cat); UI.confirm = ''; rerender(); };
+  const del = $('#btnDel');
+  if (del) del.onclick = () => {
+    if (UI.confirm !== 'delrow'){ UI.confirm = 'delrow'; rerender(); return; }
+    const r = rowsOf(UI.month); const i = r.findIndex(x => x.id === E.id);
+    if (i >= 0){ logAdd(UI.month, r[i].name, '삭제', '월간 자료에서 품목 삭제'); r.splice(i, 1); save(); }
+    UI.confirm = ''; newEntry(E.cat); render(); toast('삭제했습니다');
+  };
+  $('#entryForm').onsubmit = ev => {
+    ev.preventDefault(); read();
+    if (E.custom) E.name = ($('#eNameT')?.value || '').trim();
+    if (!E.cat){ toast('구분을 선택하세요'); return; }
+    if (!E.name){ toast('상품명을 입력하거나 선택하세요'); return; }
+    if (E.zb === '' && E.biz === ''){ toast('지브레인 또는 사업단 재고를 입력하세요'); return; }
+    if ((+E.zb < 0) || (+E.biz < 0)){ toast('재고는 0 이상으로 입력하세요'); return; }
+    const rows = rowsOf(UI.month);
+    let r = E.id ? rows.find(x => x.id === E.id) : rows.find(x => norm(x.name) === norm(E.name));
+    const vals = {cat: E.cat, zb: E.zb === '' ? 0 : +E.zb, biz: E.biz === '' ? 0 : +E.biz, mfg: E.mfg || null, exp: E.exp || null, plan: E.plan.trim()};
+    if (r){
+      const before = calc(r, S.months[UI.month].base).tot;
+      Object.assign(r, vals); delete r.tot;
+      logAdd(UI.month, r.name, '수정', `총 보유재고 ${fmt(before)} → ${fmt(calc(r, S.months[UI.month].base).tot)}`);
+    } else {
+      r = {id: S.nextId++, name: E.name, ...vals}; rows.push(r);
+      if (!S.master.some(p => norm(p.name) === norm(E.name))) S.master.push({cat: E.cat, name: E.name});
+      logAdd(UI.month, r.name, '추가', `신규 품목 · 총 보유재고 ${fmt(calc(r, S.months[UI.month].base).tot)}`);
+    }
+    save(); toast(`${norm(r.name)} 저장 완료`); newEntry(E.cat); render();
+  };
+}
+function softPreview(){ // 입력 중에는 전체 재렌더 대신 계산 필드만 갱신 (포커스 유지)
+  const E = UI.E, m = UI.month;
+  const c = calc({zb:E.zb===''?null:+E.zb, biz:E.biz===''?null:+E.biz, exp:E.exp||null}, baseOf(m));
+  $('#eTot').value = c.tot === null ? '' : fmt(c.tot);
+  $('#eDays').value = c.days === null ? '' : c.days + '일';
+  const pv = $('.prev'); if (!pv) return;
+  const pills = $$('.pill', pv)[0]; if (pills) pills.outerHTML = pill(c.st);
+  const dds = $$('dd', pv);
+  dds[0].innerHTML = `<b>${c.tot===null?'–':fmt(c.tot)}</b>`; dds[2].textContent = dot(E.exp); dds[3].textContent = c.days === null ? '–' : c.days + '일';
+  dds[4].textContent = (c.st && RULE[c.st]) ? RULE[c.st].rule : '–'; dds[5].innerHTML = esc(E.plan) || '<span class="muted">미작성</span>';
+}
+
+/* ---------- 기준정보 ---------- */
+function viewMaster(){
+  const cats = [...new Set(S.master.map(p=>p.cat).concat(S.cats))];
+  const rule = STATUS.slice().reverse().map(s => `<tr><td>${pill(s)}</td><td class="num">${RULE[s].days}</td><td>${RULE[s].rule}</td></tr>`).join('');
+  const tabRows = S.tabs.map(t => { const has = S.months[t.tab]; const n = has ? has.rows.length : 0;
+    return `<tr><td class="num"><b>${t.tab}</b></td><td class="num">${dot(t.date)}</td><td>${has?`<span class="pill p-정상"><i>✓</i>${n}개 품목 입력</span>`:(t.tab > months().slice(-1)[0] ? '<span class="pill p-info">예정</span>' : '<span class="pill p-미입력">자료 없음</span>')}</td></tr>`; }).join('');
+  const prod = S.master.map((p, i) => `<tr><td><span class="chip">${esc(p.cat)}</span></td><td class="nm">${esc(p.name)}</td><td><button class="btn sm ${UI.confirm==='p'+i?'warn':''}" data-delprod="${i}">${UI.confirm==='p'+i?'삭제 확인':'삭제'}</button></td></tr>`).join('');
+  const html = `<div class="grid g2" style="margin-bottom:16px">
+    <div class="card"><h2>관리상태 및 잔여일 판정 기준</h2><p class="sub">월간 표의 상태는 이 기준으로 자동 판정합니다.</p><div class="tw"><table><thead><tr><th>관리상태</th><th>잔여일 기준</th><th>관리 원칙</th></tr></thead><tbody>${rule}</tbody></table></div></div>
+    <div class="card"><h2>재고 관리 작성 일정</h2><p class="sub">매월 반복되는 업무 기준입니다.</p>
+      <dl class="kv" style="grid-template-columns:120px 1fr"><dt>작성 마감</dt><dd>해당 월 10일 전까지 마무리</dd><dt>유통 회의</dt><dd>매월 셋째 주 월요일 참석</dd><dt>잔여일 계산</dt><dd>소비기한 − 월 기준일 (기본 10일)</dd></dl>
+      <h2 style="margin-top:20px">월별 탭 현황</h2><div class="tw" style="margin-top:8px"><table><thead><tr><th>월별 탭</th><th>관리월</th><th>데이터</th></tr></thead><tbody>${tabRows}</tbody></table></div></div>
+  </div>
+  <div class="card" style="margin-bottom:16px"><div class="sec-title"><h2>상품 기준정보</h2><span class="muted">${S.master.length}개 상품 · ${cats.length}개 구분</span></div>
+    <form class="bar" id="prodForm"><div class="field"><label for="pCat">구분</label><select id="pCat">${cats.map(c=>`<option>${esc(c)}</option>`).join('')}<option value="__new">+ 새 구분</option></select></div>
+      <div class="field" id="pCatNewW" hidden><label for="pCatNew">새 구분명</label><input type="text" id="pCatNew"></div>
+      <div class="field" style="flex:1;min-width:220px"><label for="pName">상품명</label><input type="text" id="pName" placeholder="예: 보성 키위주스 [27.12.31]"></div>
+      <button class="btn pri" style="align-self:flex-end">상품 추가</button></form>
+    <div class="tw" style="max-height:420px"><table><thead><tr><th>구분</th><th>상품명</th><th></th></tr></thead><tbody>${prod}</tbody></table></div>
+    <p class="sub" style="margin:10px 0 0">상품을 삭제해도 이미 입력한 월별 자료는 남습니다.</p></div>
+  <div class="card"><h2>데이터 백업·복원</h2><p class="sub">입력한 자료는 이 브라우저에만 저장됩니다. 다른 사람과 나누거나 보관하려면 아래 백업 문구를 복사해 두세요.</p>
+    <div class="bar" style="margin-bottom:10px"><button class="btn" id="btnBackup">백업 문구 복사</button><button class="btn" id="btnXlsx">엑셀 형식으로 복사 (전체 월)</button><span class="sp"></span><button class="btn warn" id="btnReset">${UI.confirm==='reset'?'초기화 확인 (되돌릴 수 없음)':'원본 엑셀 값으로 초기화'}</button></div>
+    <div class="field"><label for="impTa">복원 <em>백업 문구를 붙여넣고 가져오기를 누릅니다</em></label><textarea id="impTa" class="mono" rows="3" placeholder='{"months":{...}}'></textarea></div>
+    <div class="bar" style="margin:10px 0 0"><button class="btn" id="btnImport">가져오기</button></div></div>`;
+  return {html, after(){
+    const sel = $('#pCat'); sel.onchange = () => { $('#pCatNewW').hidden = sel.value !== '__new'; };
+    $('#prodForm').onsubmit = e => { e.preventDefault();
+      const cat = sel.value === '__new' ? $('#pCatNew').value.trim() : sel.value, name = $('#pName').value.trim();
+      if (!cat || !name){ toast('구분과 상품명을 입력하세요'); return; }
+      if (S.master.some(p => p.name === name)){ toast('이미 등록된 상품명입니다'); return; }
+      S.master.push({cat, name}); logAdd('-', name, '기준정보 추가', `${cat} 구분에 상품 등록`); save(); render(); toast('상품을 추가했습니다'); };
+    $$('[data-delprod]').forEach(b => b.onclick = () => { const i = +b.dataset.delprod;
+      if (UI.confirm !== 'p'+i){ UI.confirm = 'p'+i; render(); return; }
+      const p = S.master.splice(i,1)[0]; logAdd('-', p.name, '기준정보 삭제', '상품 목록에서 제외'); UI.confirm = ''; save(); render(); });
+    $('#btnBackup').onclick = () => copyText(JSON.stringify(S), '백업 문구를 복사했습니다');
+    $('#btnXlsx').onclick = () => copyText(allTsv(), '전체 월 자료를 복사했습니다. 엑셀에 붙여넣으세요');
+    $('#btnReset').onclick = () => { if (UI.confirm !== 'reset'){ UI.confirm = 'reset'; render(); return; }
+      S = fresh(); UI.month = months().slice(-1)[0]; UI.confirm = ''; UI.E = null; save(); render(); toast('원본 값으로 초기화했습니다'); };
+    $('#btnImport').onclick = () => { try { const o = JSON.parse($('#impTa').value); if (!o.months || !o.master) throw 0;
+        S = o; S.log = S.log || []; S.nextId = S.nextId || 100000; UI.month = months().slice(-1)[0]; UI.E = null; save(); render(); toast('가져왔습니다'); }
+      catch(e){ toast('백업 문구 형식이 올바르지 않습니다'); } };
+  }};
+}
+function allTsv(){
+  const head = ['관리월','순번','관리상태','구분','상품명','총 보유재고','지브레인 재고','사업단 재고','제조일자','소비기한','잔여일','유통 실행계획'];
+  const out = [head.join('\t')];
+  months().forEach(m => enrich(m, S.months[m].base).forEach(e => out.push([m,e.i+1,e.st,e.r.cat,e.r.name,e.tot??'',e.r.zb??'',e.r.biz??'',e.r.mfg||'',e.r.exp||'',e.days??'',(e.r.plan||'').replace(/\s+/g,' ')].join('\t'))));
+  return out.join('\n');
+}
+
+/* ---------- 점검·기록 ---------- */
+function runChecks(){
+  const out = [];
+  const add = (lv, title, desc, items) => { if (items.length) out.push({lv, title, desc, items}); };
+  const mm = months();
+  const list = (fn) => mm.flatMap(m => enrich(m, S.months[m].base).filter(e => fn(e, m)).map(e => ({m, e})));
+  add('오류', '합계가 지브레인+사업단 재고와 다름', '합계 칸에 직접 입력한 값이 구성 재고와 맞지 않습니다. 구성별 수량을 확인하세요.',
+    list(e => e.mism).map(x => ({t: `${mLabel(x.m)} · ${x.e.r.name}`, d: `합계 ${fmt(x.e.tot)} / 구성 합 ${fmt((+x.e.r.zb||0)+(+x.e.r.biz||0))}`, id: x.e.r.id, m: x.m})));
+  add('오류', '제조일자가 소비기한보다 늦음', '일자가 뒤바뀌었거나 연도가 잘못 입력되었을 가능성이 있습니다.',
+    list(e => e.r.mfg && e.r.exp && e.r.mfg > e.r.exp).map(x => ({t: `${mLabel(x.m)} · ${x.e.r.name}`, d: `제조 ${dot(x.e.r.mfg)} / 소비기한 ${dot(x.e.r.exp)}`, id: x.e.r.id, m: x.m})));
+  add('확인', '소비기한 미입력 (재고 보유)', '소비기한이 없으면 잔여일과 관리상태를 판정할 수 없습니다.',
+    list(e => e.tot > 0 && !e.r.exp).map(x => ({t: `${mLabel(x.m)} · ${x.e.r.name}`, d: `재고 ${fmt(x.e.tot)}`, id: x.e.r.id, m: x.m})));
+  add('확인', '제조일자 미입력 (재고 보유)', '제조일자가 비어 있습니다.',
+    list(e => e.tot > 0 && !e.r.mfg).map(x => ({t: `${mLabel(x.m)} · ${x.e.r.name}`, d: `재고 ${fmt(x.e.tot)}`, id: x.e.r.id, m: x.m})));
+  const last = mm[mm.length-1];
+  add('확인', `${mLabel(last)} 유통 실행계획 미작성`, '재고가 있는데 실행계획이 비어 있는 품목입니다. 유통 회의 전 작성이 필요합니다.',
+    list((e,m) => m === last && e.tot > 0 && !(e.r.plan||'').trim()).map(x => ({t: x.e.r.name, d: `재고 ${fmt(x.e.tot)} · ${x.e.st}`, id: x.e.r.id, m: x.m})));
+  add('확인', `${mLabel(last)} 재고 미입력`, '지브레인·사업단 재고가 모두 비어 있습니다.',
+    list((e,m) => m === last && e.tot === null).map(x => ({t: x.e.r.name, d: '재고 입력 필요', id: x.e.r.id, m: x.m})));
+  add('확인', '소비기한이 지난 재고', '출고를 중단하고 폐기·반품 여부를 검토해야 합니다.',
+    list((e,m) => m === last && e.st === '만료').map(x => ({t: x.e.r.name, d: `잔여일 ${x.e.days}일 · 재고 ${fmt(x.e.tot)}`, id: x.e.r.id, m: x.m})));
+  const miss = S.master.filter(p => !findByKey(last, norm(p.name)));
+  add('확인', `${mLabel(last)} 월간 표에 없는 등록 상품`, '기준정보에는 있으나 이 달 자료에 행이 없습니다.', miss.map(p => ({t: p.name, d: p.cat})));
+  const nameVar = {}; mm.forEach(m => rowsOf(m).forEach(r => { const k = norm(r.name); (nameVar[k] = nameVar[k] || new Set()).add(r.name); }));
+  add('참고', '월별로 상품명 표기가 달라진 품목', '소비기한 표기([yy.mm.dd])가 붙거나 빠졌습니다. 추이는 괄호를 뺀 이름으로 묶어 연결했습니다.',
+    Object.entries(nameVar).filter(([k,v]) => v.size > 1).map(([k,v]) => ({t: k, d: [...v].join('  →  ')})));
+  const noData = S.tabs.filter(t => !S.months[t.tab] && t.tab < last);
+  add('참고', '기준정보에 있으나 자료가 없는 월', '원본 엑셀에서 해당 월 시트가 삭제되어 추이 표에 자료 없음으로 표시됩니다.', noData.map(t => ({t: mLabel(t.tab), d: ''})));
+  return out;
+}
+function viewCheck(){
+  const checks = runChecks();
+  const lvPill = lv => `<span class="pill ${lv==='오류'?'p-위험':lv==='확인'?'p-경고':'p-info'}">${lv}</span>`;
+  const chk = checks.length ? checks.map(c => `<div class="issue"><header>${lvPill(c.lv)}<b>${esc(c.title)}</b><span class="muted num">${c.items.length}건</span></header>
+    <p class="sub" style="margin:8px 14px 0">${esc(c.desc)}</p><ul>${c.items.map(i => `<li>${esc(i.t)}${i.d?` <span class="muted">— ${esc(i.d)}</span>`:''} ${i.id?`<button class="btn sm" data-fix="${i.m}|${i.id}">수정</button>`:''}</li>`).join('')}</ul></div>`).join('')
+    : '<div class="empty">점검할 항목이 없습니다. 자료가 모두 정상입니다.</div>';
+  const log = S.log.length ? S.log.slice(0, 60).map(l => { const d = new Date(l.t);
+    return `<div class="lg"><span class="muted num">${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}</span><span><b>${esc(l.action)}</b>${l.month&&l.month!=='-'?` · ${mShort(l.month)}`:''}</span><span>${esc(l.name)} <span class="muted">${esc(l.detail||'')}</span></span></div>`; }).join('') : '<div class="empty">아직 변경 기록이 없습니다. 재고를 저장하면 여기에 쌓입니다.</div>';
+  const html = `<div class="grid g2">
+   <div class="stack">
+    <div class="card"><h2>입력 데이터 점검</h2><p class="sub">현재 저장된 월별 자료를 자동으로 검사한 결과입니다. 수정하면 바로 갱신됩니다.</p><div class="stack" style="gap:12px">${chk}</div></div>
+   </div>
+   <div class="stack">
+    <div class="card"><h2>변경 기록</h2><p class="sub">이 브라우저에서 저장·삭제한 내용을 최근 순으로 보여 줍니다.</p>${log}</div>
+   </div></div>`;
+  return {html: html + syncCard(), after(){ bindSync(); }};
+}
+
+/* ---------- 엑셀 업로드 (3PL 재고 파일 → 월간 재고 자동 정리) ---------- */
+// 상품명 비교용 키: 끝의 [소비기한] 표기, 공백·기호를 지운 소문자
+const sq = s => norm(s).toLowerCase().replace(/[\s_\-()\[\]{}·.,\/\\]+/g, '');
+const fk = s => String(s ?? '').toLowerCase().replace(/[\s_\-()\[\]{}·.,\/\\]+/g, ''); // 끝의 [냉동] 같은 표기도 지우지 않는 키
+const UP_DEF = {
+  code: {pri:['상품코드','품목코드','제품코드','자체코드','sku'], ex:[]},
+  name: {pri:['상품명','품목명','제품명','품명','상품','품목','제품'], ex:['코드','번호','구분','분류','수량','바코드']},
+  qty:  {pri:['현재고','현재재고','재고수량','총재고','정상재고','가용재고','실재고','재고','수량'], ex:['코드','불량','예정','입고','출고','안전','금액','단가','위치','로케','일자','번호','경고','위험','관리','합포']},
+  exp:  {pri:['소비기한','유통기한','유효기한','유효기간','소비기일','만료일'], ex:[]},
+  mfg:  {pri:['제조일자','제조일','제조년월일','생산일자','생산일'], ex:[]},
+  cat:  {pri:['카테고리','상품분류','분류','브랜드'], ex:['코드']}
+};
+const UP_LABEL = {code:'상품코드', name:'상품명', qty:'수량(재고)', exp:'소비기한', mfg:'제조일자', cat:'카테고리'};
+const UP_OPT = {code:1, exp:1, mfg:1, cat:1};
+function upScore(label, def){
+  const t = String(label ?? '').replace(/\s+/g, '').toLowerCase();
+  if (!t) return -1;
+  if (def.ex.some(x => t.includes(x))) return -1;
+  const i = def.pri.findIndex(p => t === p);
+  if (i >= 0) return 100 - i;
+  const j = def.pri.findIndex(p => t.includes(p));
+  return j >= 0 ? 50 - j : -1;
+}
+function upColsAt(aoa, hdr){
+  const row = aoa[hdr] || [], map = {code:-1, name:-1, qty:-1, exp:-1, mfg:-1, cat:-1}, used = new Set();
+  ['name','qty','code','exp','mfg','cat'].forEach(f => {
+    let best = -1, bs = -1;
+    row.forEach((c, i) => { if (used.has(i)) return; const s = upScore(c, UP_DEF[f]); if (s > bs){ bs = s; best = i; } });
+    if (bs >= 0){ map[f] = best; used.add(best); }
+  });
+  // 날짜 열로 잡혔어도 값이 날짜가 아니면(예: 유통기한 '0' = 보관일수) 쓰지 않는다
+  ['exp','mfg'].forEach(f => {
+    if (map[f] < 0) return;
+    let ok = 0;
+    for (let i = hdr + 1; i < Math.min(aoa.length, hdr + 81); i++) if (toISO((aoa[i] || [])[map[f]])) ok++;
+    if (!ok) map[f] = -1;
+  });
+  return map;
+}
+function upDetect(aoa){ // 상품명·수량 열이 함께 보이는 첫 행을 머리글로 본다
+  let best = {hdr:0, map:upColsAt(aoa, 0), n:-1};
+  for (let h = 0; h < Math.min(aoa.length, 25); h++){
+    const map = upColsAt(aoa, h);
+    if (map.name >= 0 && map.qty >= 0) return {hdr:h, map};
+    const n = (map.name >= 0) + (map.qty >= 0) + (map.exp >= 0) + (map.mfg >= 0);
+    if (n > best.n) best = {hdr:h, map, n};
+  }
+  return {hdr:best.hdr, map:best.map};
+}
+function upAoa(U){
+  if (!U.cache[U.sheet]) U.cache[U.sheet] = XLSX.utils.sheet_to_json(U.wb.Sheets[U.sheet], {header:1, defval:'', raw:true, blankrows:true});
+  return U.cache[U.sheet];
+}
+function toISO(v){
+  const ok = (y, m, d) => y >= 1990 && y <= 2100 && m >= 1 && m <= 12 && d >= 1 && d <= 31 ? `${y}-${pad(m)}-${pad(d)}` : null;
+  if (v == null || v === '') return null;
+  if (v instanceof Date) return isNaN(v) ? null : ok(v.getFullYear(), v.getMonth()+1, v.getDate());
+  if (typeof v === 'number'){
+    if (v > 20000 && v < 80000){ const o = XLSX.SSF.parse_date_code(v); return o ? ok(o.y, o.m, o.d) : null; }
+    if (v >= 19900101 && v <= 21001231){ const s = String(v); return ok(+s.slice(0,4), +s.slice(4,6), +s.slice(6,8)); }
+    return null;
+  }
+  const s = String(v).trim(); let m;
+  if ((m = s.match(/^(\d{4})[-./\s]+(\d{1,2})[-./\s]+(\d{1,2})/))) return ok(+m[1], +m[2], +m[3]);
+  if ((m = s.match(/^(\d{2})[-./](\d{1,2})[-./](\d{1,2})\.?$/))) return ok(2000 + +m[1], +m[2], +m[3]);
+  if ((m = s.match(/^(\d{4})(\d{2})(\d{2})$/))) return ok(+m[1], +m[2], +m[3]);
+  return null;
+}
+function nameDate(name){ // 상품명 속 [27.07.20] · (27.04.21) · [2027.10.18] 표기를 소비기한으로 읽는다
+  const re = /[\[(]\s*(\d{2,4})\s*[.\-\/]\s*(\d{1,2})\s*[.\-\/]\s*(\d{1,2})\s*\.?\s*[\])]/g; let m;
+  while ((m = re.exec(name))){ const d = toISO(`${m[1]}.${m[2]}.${m[3]}`); if (d) return d; }
+  return null;
+}
+function toQty(v){
+  if (v == null || v === '') return null;
+  if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+  const s = String(v).replace(/[,\s]/g, '');
+  return /^-?\d+(\.\d+)?$/.test(s) ? +s : null;
+}
+const upCell = v => v instanceof Date ? (toISO(v) || '') : String(v ?? '');
+function upAggregate(aoa, hdr, map){ // 같은 상품코드(없으면 같은 상품명)가 여러 행이면 수량을 합산
+  const out = new Map(); let bad = 0;
+  for (let i = hdr + 1; i < aoa.length; i++){
+    const row = aoa[i], name = upCell(row[map.name]).trim();
+    if (!name || /^(합계|총계|소계|total)$/i.test(name.replace(/\s+/g, ''))) continue;
+    const q = toQty(row[map.qty]);
+    if (q === null){ bad++; continue; }
+    const nk = sq(name); if (!nk) continue;
+    const code = map.code >= 0 ? upCell(row[map.code]).trim() : '';
+    const key = code ? 'c:' + code : 'n:' + nk;
+    let a = out.get(key);
+    if (!a){ a = {key, code, name, nk, fk: fk(name), qty:0, rows:0, exp:null, mfg:null, nd:nameDate(name), cat: map.cat >= 0 ? upCell(row[map.cat]).trim() : ''}; out.set(key, a); }
+    a.qty += q; a.rows++;
+    if (q > 0){ // 재고가 있는 로트의 기한 중 가장 빠른 날짜를 쓴다
+      const e = map.exp >= 0 ? toISO(row[map.exp]) : null, g = map.mfg >= 0 ? toISO(row[map.mfg]) : null;
+      if (e && (!a.exp || e < a.exp)) a.exp = e;
+      if (g && (!a.mfg || g < a.mfg)) a.mfg = g;
+    }
+  }
+  return {list:[...out.values()], bad};
+}
+function upPlan(U, O){
+  const ag = upAggregate(upAoa(U), U.hdr, U.map);
+  const exists = !!S.months[O.month];
+  const tpl = exists ? rowsOf(O.month) : rowsOf(months().filter(x => x < O.month).pop() || months().slice(-1)[0]);
+  const byKey = new Map(); tpl.forEach(r => { const k = sq(r.name); if (k && !byKey.has(k)) byKey.set(k, r); });
+  const learned = S.codes || {};
+  const sites = [...byKey.entries()].map(([k, r]) => {
+    const toks = norm(r.name).split(/[\s_\-()\[\]{}·,\/\\]+/).map(sq).filter(t => t.length >= 2);
+    return {k, r, toks, len: toks.join('').length};
+  }).filter(s => s.len >= 4);
+  const items = ag.list.map(a => ({a, t: undefined, auto: 'none'}));
+  // 1) 직접 고른 연결, 기억해 둔 상품코드는 그대로 따른다
+  items.forEach(x => {
+    const a = x.a, m = U.links[a.key];
+    if (m !== undefined){ x.t = m; x.auto = 'manual'; }
+    else {
+      const lv = learned[a.code || 'n:' + a.nk];
+      if (lv === '__skip'){ x.t = '__skip'; x.auto = 'ignored'; }
+      else if (lv && byKey.has(lv)){ x.t = lv; x.auto = 'learned'; }
+    }
+  });
+  const taken = new Set(items.filter(x => x.t !== undefined && x.t !== '__skip' && x.t !== '__new').map(x => x.t));
+  // 2) 이름이 같거나, 월간 표 품목명의 단어가 상품명에 모두 들어 있으면 후보.
+  //    한 품목에 후보가 여럿이면(같은 상품의 로트별 상품코드 등) 소비기한이 같은 것을 고른다
+  const cand = new Map(), ambT = new Set();
+  items.filter(x => x.t === undefined).forEach(x => {
+    let k = null, exact = false;
+    if (byKey.has(x.a.nk)){ k = x.a.nk; exact = true; }
+    else {
+      const hits = sites.filter(s => s.toks.every(t => x.a.fk.includes(t)));
+      const top = hits.length ? Math.max(...hits.map(s => s.len)) : 0, best = hits.filter(s => s.len === top);
+      if (best.length === 1) k = best[0].k;
+    }
+    if (k === null || taken.has(k)) return;
+    if (!cand.has(k)) cand.set(k, []);
+    cand.get(k).push({x, exact});
+  });
+  cand.forEach((list, k) => {
+    const d = byKey.get(k).exp, dm = d ? list.filter(c => (c.x.a.nd || c.x.a.exp) === d) : [], ex = list.filter(c => c.exact);
+    let pick = null, auto = 'guess';
+    if (dm.length === 1){ pick = dm[0]; auto = pick.exact ? 'exact' : 'dated'; }
+    else if (dm.length === 0 && list.length === 1){ pick = list[0]; auto = pick.exact ? 'exact' : 'guess'; }
+    else if (dm.length === 0 && ex.length === 1){ pick = ex[0]; auto = 'exact'; }
+    if (pick){ pick.x.t = k; pick.x.auto = auto; taken.add(k); }
+    else { list.forEach(c => { c.x.auto = 'ambig'; }); ambT.add(k); }
+  });
+  // 3) 아직 짝이 없는 월간 품목: 소비기한이 같고 글자가 충분히 겹치는 상품이 하나뿐이면 후보로 올린다
+  //    (예: '천마전복 삼계탕' ↔ '무주천마 Brai:t 전복 삼계탕 [27.12.14]')
+  const bigrams = str => { const b = new Set(); for (let i = 0; i < str.length - 1; i++) b.add(str.slice(i, i + 2)); return b; };
+  sites.forEach(s => {
+    if (taken.has(s.k) || !s.r.exp) return;
+    const sb = [...bigrams(s.k)]; if (sb.length < 4) return;
+    const L = items.filter(x => x.t === undefined && (x.a.nd || x.a.exp) === s.r.exp && sb.filter(g => x.a.fk.includes(g)).length / sb.length >= 0.7);
+    if (L.length === 1){ L[0].t = s.k; L[0].auto = 'guess'; taken.add(s.k); }
+  });
+  items.forEach(x => { if (x.t === undefined || (x.t !== '__skip' && x.t !== '__new' && !byKey.has(x.t))) x.t = '__skip'; });
+  // 같은 품목에 연결된 상품은 수량을 합산, 마이너스 재고는 0으로 보정
+  const tg = new Map();
+  items.forEach(x => {
+    if (x.t === '__skip' || x.t === '__new') return;
+    const g = tg.get(x.t) || {key:x.t, row:byKey.get(x.t), raw:0, exp:null, mfg:null, n:0};
+    g.raw += x.a.qty; g.n++;
+    const e = x.a.exp || x.a.nd; if (e && (!g.exp || e < g.exp)) g.exp = e;
+    if (x.a.mfg && (!g.mfg || x.a.mfg < g.mfg)) g.mfg = x.a.mfg;
+    tg.set(x.t, g);
+  });
+  const cnt = {chg:0, same:0, new:0, skip:0, guess:0, neg:0};
+  tg.forEach(g => {
+    g.qty = Math.max(0, g.raw);
+    const cur = g.row[O.field]; g.cur = cur == null ? null : +cur;
+    g.kind = g.cur !== null && g.cur === g.qty ? 'same' : 'chg';
+    cnt[g.kind]++; if (g.raw < 0) cnt.neg++;
+  });
+  items.forEach(x => {
+    if (x.t === '__skip'){ x.kind = 'skip'; x.cur = null; x.next = null; cnt.skip++; return; }
+    if (x.t === '__new'){ x.kind = 'new'; x.cur = null; x.raw = x.a.qty; x.next = Math.max(0, x.a.qty); x.neg = x.a.qty < 0; cnt.new++; if (x.neg) cnt.neg++; return; }
+    const g = tg.get(x.t);
+    x.g = g; x.kind = g.kind; x.cur = g.cur; x.raw = g.raw; x.next = g.qty; x.neg = g.raw < 0; x.dup = g.n > 1;
+    if (x.auto === 'guess') cnt.guess++;
+  });
+  const missing = tpl.filter(r => !tg.has(sq(r.name)));
+  // 후보가 여러 개라 연결을 못 한 품목은 0으로 만들지 않는다
+  const missingOk = missing.filter(r => !ambT.has(sq(r.name)));
+  const zeroRows = missingOk.filter(r => r[O.field] == null || +r[O.field] !== 0 || !exists);
+  cnt.ambig = ambT.size;
+  return {items, tg, cnt, missing, missingOk, zeroRows, tpl, exists, bad: ag.bad, total: ag.list.length};
+}
+
+async function parseUploadFile(file){ // 엑셀·HTML(.xls)·CSV를 읽어 열까지 찾은 업로드 상태(U)를 돌려준다
+  const buf = await file.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  const decode = () => { try { return new TextDecoder('utf-8', {fatal:true}).decode(buf); } catch(e){ return new TextDecoder('euc-kr').decode(buf); } };
+  const binary = (bytes[0] === 0x50 && bytes[1] === 0x4B) || (bytes[0] === 0xD0 && bytes[1] === 0xCF); // xlsx(zip) · 구형 xls
+  let wb;
+  if (!binary && /<\s*(table|html|!doctype)/i.test(new TextDecoder('utf-8').decode(bytes.subarray(0, 8192)))){
+    // 이지어드민처럼 확장자만 .xls이고 실제로는 HTML 표인 파일은 브라우저로 표를 직접 읽는다
+    const doc = new DOMParser().parseFromString(decode(), 'text/html');
+    wb = XLSX.utils.book_new();
+    [...doc.querySelectorAll('table')].filter(t => !t.parentElement.closest('table') && t.rows.length).forEach((t, i) =>
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([...t.rows].map(r => [...r.cells].map(c => c.textContent.replace(/\s+/g, ' ').trim()))), `표${i+1}`));
+  } else if (!binary){ // csv · txt (UTF-8 또는 CP949)
+    wb = XLSX.read(decode(), {type:'string'});
+  } else wb = XLSX.read(bytes, {type:'array'}); // 날짜는 일련번호로 읽어 시간대 영향 없이 변환
+  const names = wb.SheetNames.filter(n => wb.Sheets[n] && wb.Sheets[n]['!ref']);
+  if (!names.length) throw new Error('nosheet');
+  const U = {fileName: file.name, stamp: fileStamp(file), wb, names, sheet: names[0], cache: {}, hdr: 0, map: {code:-1, name:-1, qty:-1, exp:-1, mfg:-1, cat:-1}, links: {}};
+  let found = false;
+  for (const n of names){ // 상품명·수량 열이 함께 잡히는 시트를 우선 사용
+    U.sheet = n; const d = upDetect(upAoa(U));
+    if (d.map.name >= 0 && d.map.qty >= 0){ U.hdr = d.hdr; U.map = d.map; found = true; break; }
+  }
+  if (!found){ U.sheet = names[0]; const d = upDetect(upAoa(U)); U.hdr = d.hdr; U.map = d.map; }
+  return U;
+}
+function fileStamp(file){ // 파일명 속 20261116074920 같은 내려받은 시각 → 없으면 파일 수정 시각
+  const n = String(file.name || ''); let m;
+  if ((m = n.match(/(20\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/)) && toISO(`${m[1]}-${m[2]}-${m[3]}`) && +m[4] < 24 && +m[5] < 60) return {date: `${m[1]}-${m[2]}-${m[3]}`, time: `${m[4]}:${m[5]}`};
+  if ((m = n.match(/(20\d{2})[-_.]?(\d{2})[-_.]?(\d{2})/)) && toISO(`${m[1]}-${m[2]}-${m[3]}`)) return {date: `${m[1]}-${m[2]}-${m[3]}`, time: ''};
+  const d = file.lastModified ? new Date(file.lastModified) : new Date();
+  return {date: `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`, time: `${pad(d.getHours())}:${pad(d.getMinutes())}`};
+}
+async function loadUploadFile(file){
+  if (typeof XLSX === 'undefined'){ toast('엑셀 해석 도구를 불러오지 못했습니다. 인터넷 연결을 확인하고 새로고침하세요'); return; }
+  try {
+    UI.U = await parseUploadFile(file); render(); scrollTo(0, 0);
+  } catch(e){ toast(e.message === 'nosheet' ? '읽을 수 있는 시트가 없습니다' : '파일을 읽지 못했습니다. 엑셀(.xlsx·.xls)이나 .csv 파일인지 확인하세요'); }
+}
+
+/* ---------- 원클릭 반영: 파일만 올리면 파일 날짜의 월에 바로 반영 ---------- */
+const stampStr = st => `${st.date}${st.time ? ' ' + st.time : ''}`;
+async function quickUpload(file){
+  if (typeof XLSX === 'undefined'){ toast('엑셀 해석 도구를 불러오지 못했습니다. 인터넷 연결을 확인하고 새로고침하세요'); return; }
+  let U;
+  try { U = await parseUploadFile(file); }
+  catch(e){ toast('파일을 읽지 못했습니다. 이지어드민에서 내려받은 재고 엑셀인지 확인하세요'); return; }
+  const m = U.stamp.date.slice(0, 7);
+  const O = {month: m, field: 'zb', dates: 'fill', zero: true, newCat: UI.UP.newCat || '미분류'};
+  const toDetail = msg => { UI.U = U; UI.UP = O; toast(msg); setTab('upload'); };
+  if (U.map.name < 0 || U.map.qty < 0) return toDetail('상품명·수량 열을 찾지 못했습니다. 열을 직접 골라 주세요');
+  const prev = S.months[m] && S.months[m].src;
+  if (prev && stampStr(prev) > stampStr(U.stamp)) return toDetail(`이미 더 최신 파일(${dot(prev.date)} ${prev.time})이 반영돼 있습니다. 확인 후 반영하세요`);
+  const P = upPlan(U, O);
+  if (!P.items.some(x => x.kind !== 'skip')) return toDetail('월간 표와 연결되는 상품을 찾지 못했습니다. 연결을 직접 골라 주세요');
+  applyPlan(U, O, P, true);
+  UI.U = U; UI.UP = O; UI.month = m; UI.E = null;
+  save(); saveUI(); setTab('live');
+  const L = S.lastImport;
+  toast(SYNC.remote && !SY.token ? '이 기기는 공유 저장이 꺼져 있어 이 화면에만 반영됐습니다. 엑셀 올리는 PC에서 공유 저장을 켜 주세요'
+    : `${dot(U.stamp.date)} ${U.stamp.time} 재고 반영 완료 · 변경 ${L.sum.chg}${L.pending.length ? ` · 새 상품 ${L.pending.length}개 확인` : ''}`);
+}
+function catGuess(ct, name){ // 엑셀 카테고리('무주 천마[FAMNET]')나 상품명으로 월간 표의 구분을 추정
+  const cats = S.cats || [], t = (String(ct || '') + name).replace(/\s+/g, '');
+  const hit = cats.find(c => t.includes(c)); if (hit) return hit;
+  const toks = String(name).split(/[\s_\-()\[\]{}·,\/\\*]+/).map(sq).filter(x => x.length >= 2 && !/^\d/.test(x));
+  let best = '미분류', bs = 0;
+  cats.forEach(c => { const pool = S.master.filter(p => p.cat === c).map(p => fk(p.name)).join('|'); const n = toks.filter(x => pool.includes(x)).length; if (n > bs){ bs = n; best = c; } });
+  return best;
+}
+const cleanName = n => String(n).trim().replace(/\s+[\p{Script=Han}豈-﫿]{1,4}$/u, ''); // 끝의 입수 표기(十五·六 등 한자) 제거
+
+function applyUpload(){
+  const U = UI.U, O = UI.UP, P = upPlan(U, O);
+  if (!P.items.some(x => x.kind !== 'skip')){ toast('반영할 품목이 없습니다. 연결을 확인하세요'); return; }
+  const sum = applyPlan(U, O, P, false), m = O.month;
+  UI.month = m; UI.U = null; UI.E = null; save(); saveUI(); render(); scrollTo(0, 0);
+  toast(`${mLabel(m)} 반영 완료 · 변경 ${sum.chg} · 신규 ${sum.add}`);
+}
+function applyPlan(U, O, P, quick){
+  const m = O.month, f = O.field, existed = !!S.months[m];
+  const cp = o => o == null ? null : JSON.parse(JSON.stringify(o));
+  const stp = U.stamp || {date: todayStr(), time: ''}, key = x => `${x.date} ${x.time || '00:00'}`;
+  // 실시간 재고: 지금까지 올린 파일 중 가장 최신 파일. 직전 값은 '직전 업로드 대비' 비교용으로 남긴다
+  const liveNew = f === 'zb' && (!S.live || !S.months[S.live.month] || key(stp) > key(S.live)); let prevSnap = null;
+  if (liveNew){
+    const hasL = S.live && S.months[S.live.month], pmm = hasL ? S.live.month : months().filter(x => x !== m && rowsOf(x).some(r => r.zb != null)).pop();
+    if (pmm){
+      const vals = {}; rowsOf(pmm).forEach(r => { const k = sq(r.name); if (k && r.zb != null && !(k in vals)) vals[k] = +r.zb; });
+      const sr = S.months[pmm].src;
+      prevSnap = {month: pmm, date: hasL ? S.live.date : (sr ? sr.date : S.months[pmm].base), time: hasL ? S.live.time : (sr ? sr.time : ''), vals};
+    }
+  }
+  const undo = {month: m, created: !existed, rows: existed ? cp(S.months[m].rows) : null, base: existed ? S.months[m].base : null, src: existed ? cp(S.months[m].src) : null,
+    master: cp(S.master), codes: cp(S.codes || {}), nextId: S.nextId, lastImport: cp(S.lastImport), live: cp(S.live),
+    t: new Date().toISOString(), file: U.fileName, field: f, sum: {}};
+  ensureMonth(m);
+  const rows = rowsOf(m), byKey = new Map();
+  rows.forEach(r => { const k = sq(r.name); if (k && !byKey.has(k)) byKey.set(k, r); });
+  // 엑셀에 없는 다른 칸(예: 사업단 재고)은 비어 있으면 가장 최근 달의 값을 이어받는다
+  const other = f === 'zb' ? 'biz' : 'zb', carry = carryFrom(m, other);
+  let chg = 0, same = 0, add = 0, zero = 0, neg = 0;
+  P.tg.forEach(g => {
+    const r = byKey.get(g.key); if (!r) return;
+    const cur = r[f] == null ? null : +r[f];
+    if (cur === g.qty) same++; else chg++;
+    if (g.raw < 0) neg++;
+    r[f] = g.qty; delete r.tot;
+    if (O.dates !== 'none'){
+      if (g.exp && (O.dates === 'overwrite' || !r.exp)) r.exp = g.exp;
+      if (g.mfg && (O.dates === 'overwrite' || !r.mfg)) r.mfg = g.mfg;
+    }
+  });
+  P.items.filter(x => x.kind === 'new').forEach(x => {
+    const nm = x.a.name.trim(), q = Math.max(0, x.a.qty);
+    if (rows.some(r => sq(r.name) === x.a.nk)) return;
+    rows.push({id: S.nextId++, cat: O.newCat, name: nm, zb: f === 'zb' ? q : 0, biz: f === 'biz' ? q : 0, mfg: x.a.mfg, exp: x.a.exp || x.a.nd, plan: ''});
+    if (!S.master.some(p => sq(p.name) === x.a.nk)) S.master.push({cat: O.newCat, name: nm});
+    if (x.neg) neg++;
+    add++;
+  });
+  if (O.zero) P.missingOk.forEach(mr => { const r = byKey.get(sq(mr.name)); if (r && (r[f] == null || +r[f] !== 0)){ r[f] = 0; delete r.tot; zero++; } });
+  S.codes = S.codes || {}; // 연결을 기억해 다음 업로드부터 자동으로 연결 (상품코드가 없으면 상품명 기준)
+  P.items.forEach(x => { if (x.kind !== 'skip') S.codes[x.a.code || 'n:' + x.a.nk] = x.kind === 'new' ? x.a.nk : x.t; });
+  const st = U.stamp || {date: todayStr(), time: ''};
+  S.months[m].src = {date: st.date, time: st.time, file: U.fileName};
+  if (st.date.slice(0, 7) === m) S.months[m].base = st.date; // 월 기준일 = 그 달에 마지막으로 반영한 파일의 날짜
+  if (liveNew) S.live = {month: m, date: st.date, time: st.time, file: U.fileName, prev: prevSnap};
+  // 월간 표에 없는 새 상품은 반영 후 한 번만 묻는다 (재고가 있는 것만)
+  const pending = quick ? P.items.filter(x => x.kind === 'skip' && x.auto === 'none' && x.a.qty > 0).map(x => {
+    let nm = cleanName(x.a.name);
+    if (rowsOf(m).some(r => sq(r.name) === sq(nm))) nm += ' (다른 로트)'; // 같은 이름의 다른 로트는 따로 관리
+    return {key: x.a.code || 'n:' + x.a.nk, name: nm, qty: x.a.qty, exp: x.a.exp || x.a.nd, mfg: x.a.mfg, cat: catGuess(x.a.cat, nm)};
+  }) : [];
+  undo.sum = {chg, same, add, zero, neg};
+  S.undo = undo;
+  S.lastImport = {month: m, date: st.date, time: st.time, file: U.fileName, field: f, sum: undo.sum,
+    guess: P.cnt.guess, ambig: P.cnt.ambig || 0, pending, carry: carry ? {month: carry, field: other} : null};
+  logAdd(m, '엑셀 업로드', quick ? '엑셀 자동 반영' : '엑셀 반영', `${U.fileName} (${dot(st.date)} ${st.time}) · ${f === 'biz' ? '사업단' : '지브레인'} 재고 · 변경 ${chg} · 동일 ${same} · 신규 ${add}${zero ? ` · 0 처리 ${zero}` : ''}${neg ? ` · 마이너스→0 ${neg}` : ''}`);
+  return undo.sum;
+}
+function addPending(keep){ // 새 상품 확인: 고른 것은 월간 표·기준정보에 추가, 나머지는 다음부터 묻지 않음
+  const L = S.lastImport; if (!L || !L.pending || !L.pending.length) return;
+  const rows = rowsOf(L.month); let n = 0;
+  S.codes = S.codes || {};
+  L.pending.forEach((p, i) => {
+    if (!keep.has(i)){ S.codes[p.key] = '__skip'; return; }
+    const cat = p.catSel || p.cat, k = sq(p.name);
+    if (!rows.some(r => sq(r.name) === k)){
+      rows.push({id: S.nextId++, cat, name: p.name, zb: L.field === 'biz' ? 0 : p.qty, biz: L.field === 'biz' ? p.qty : 0, mfg: p.mfg || null, exp: p.exp || null, plan: ''}); n++;
+    }
+    if (!S.master.some(x => sq(x.name) === k)) S.master.push({cat, name: p.name});
+    if (cat !== '미분류' && !S.cats.includes(cat)) S.cats.push(cat);
+    S.codes[p.key] = k;
+  });
+  if (L.sum) L.sum.add = (L.sum.add || 0) + n;
+  if (S.undo && S.undo.sum) S.undo.sum.add = (S.undo.sum.add || 0) + n;
+  L.pending = [];
+  logAdd(L.month, '엑셀 업로드', '새 상품 추가', `${n}개 추가 · ${keep.size ? '' : '모두 '}나머지는 다음 업로드부터 제외`);
+  save(); render(); toast(n ? `새 상품 ${n}개를 추가했습니다` : '다음 업로드부터 묻지 않습니다');
+}
+function undoUpload(){
+  const u = S.undo; if (!u) return;
+  if (u.created) delete S.months[u.month];
+  else if (u.rows && S.months[u.month]){ const M = S.months[u.month]; M.rows = u.rows; if (u.base) M.base = u.base; if (u.src) M.src = u.src; else delete M.src; }
+  S.master = u.master; S.nextId = u.nextId; S.codes = u.codes || {}; S.lastImport = u.lastImport || null; S.live = u.live || null;
+  logAdd(u.month, '엑셀 업로드', '반영 되돌리기', `${u.file} 반영 전 상태로 복원`);
+  if (!S.months[UI.month]) UI.month = months().slice(-1)[0];
+  S.undo = null; UI.E = null; save(); saveUI(); render(); toast('반영 전 상태로 되돌렸습니다');
+}
+
+function viewUpload(){
+  const O = UI.UP, U = UI.U, last = months().slice(-1)[0];
+  const creatable = S.tabs.map(t => t.tab).filter(t => !S.months[t] && t > last).sort();
+  const mOpts = months().map(x => ({v:x, l:mLabel(x)})).concat(creatable.map(x => ({v:x, l:`${mLabel(x)} (새 월 탭 만들기)`})));
+  if (!mOpts.some(o => o.v === O.month)) O.month = mOpts.some(o => o.v === UI.month) ? UI.month : last;
+  const fName = O.field === 'biz' ? '사업단 재고' : '지브레인 재고';
+  const u = S.undo;
+  const undoCard = u ? `<div class="card" style="margin-top:16px"><div class="bar" style="margin:0"><div><h2>직전 엑셀 반영</h2>
+      <p class="sub" style="margin:0">${mLabel(u.month)}${u.created?' (새 월 탭)':''} · ${esc(u.file)} · ${u.field==='biz'?'사업단':'지브레인'} 재고 · 변경 ${u.sum.chg} · 동일 ${u.sum.same} · 신규 ${u.sum.add}${u.sum.zero?` · 0 처리 ${u.sum.zero}`:''}${u.sum.neg?` · 마이너스→0 ${u.sum.neg}`:''} · ${new Date(u.t).getMonth()+1}/${new Date(u.t).getDate()} ${pad(new Date(u.t).getHours())}:${pad(new Date(u.t).getMinutes())}</p></div>
+      <span class="sp"></span><button class="btn" id="uShow">월간 재고에서 보기</button><button class="btn warn" id="uUndo">반영 되돌리기</button></div></div>` : '';
+  const head = `<div class="card" style="margin-bottom:16px"><div class="bar" style="margin:0 0 4px"><h2 style="margin:0">1. 반영 대상과 파일</h2><span class="sp"></span><button class="btn" data-tab="live">닫기</button></div>
+    <p class="sub">평소에는 화면 오른쪽 위 <b>재고 엑셀 올리기</b>만 누르면 파일 날짜의 월에 바로 반영됩니다. 이 화면은 연결을 직접 확인·수정하거나 다른 월에 반영할 때 씁니다.</p>
+    <div class="fgrid">
+      <div class="field"><label for="uMonth">반영할 월</label><select id="uMonth">${mOpts.map(o => `<option value="${o.v}" ${o.v===O.month?'selected':''}>${esc(o.l)}</option>`).join('')}</select></div>
+      <div class="field"><span class="lbl">엑셀 수량을 넣을 칸</span><div class="radio"><label><input type="radio" name="ufield" value="zb" ${O.field==='zb'?'checked':''}>지브레인 재고</label><label><input type="radio" name="ufield" value="biz" ${O.field==='biz'?'checked':''}>사업단 재고</label></div></div>
+    </div>
+    <label class="drop" id="uDrop" for="uFile" style="margin-top:14px"><b>${U?'다른 엑셀 파일 선택':'엑셀 파일을 끌어다 놓거나 눌러서 선택'}</b><span>${U?`현재 파일: ${esc(U.fileName)}`:'.xlsx · .xls · .csv'}</span><input type="file" id="uFile" class="sr" accept=".xlsx,.xls,.csv,.txt"></label></div>`;
+  if (!U) return {html: head + undoCard, after: bindUpload};
+
+  const aoa = upAoa(U), hdrRow = aoa[U.hdr] || [];
+  const ncol = Math.max(hdrRow.length, ...aoa.slice(U.hdr + 1, U.hdr + 40).map(r => r.length), 0);
+  const colOpts = sel => ['<option value="-1">사용 안 함</option>'].concat(Array.from({length: ncol}, (_, i) => { const lb = upCell(hdrRow[i]).trim() || `열 ${i+1}`; return `<option value="${i}" ${i===sel?'selected':''}>${esc(lb)}</option>`; })).join('');
+  const sameCol = i => aoa.slice(U.hdr + 1, U.hdr + 301).every(r => String(r[i] ?? '') === String(r[U.map.qty] ?? ''));
+  const extraQty = hdrRow.map((c, i) => ({c: upCell(c).trim(), i, s: upScore(c, UP_DEF.qty)})).filter(x => x.s >= 0 && x.i !== U.map.qty && !sameCol(x.i)).map(x => x.c);
+  const rawRows = aoa.slice(0, 8).map(r => `<tr>${Array.from({length: Math.min(ncol, 12)}, (_, i) => `<td>${esc(upCell(r[i]))}</td>`).join('')}</tr>`).join('');
+  const step2 = `<div class="card" style="margin-bottom:16px"><h2>2. 열 확인</h2><p class="sub">머리글을 보고 자동으로 열을 찾았습니다. 틀렸다면 아래에서 바로 고르세요. 상품코드를 지정하면 한 번 연결한 상품은 다음 업로드부터 코드로 자동 연결됩니다.</p>
+    <div class="fgrid">
+      ${U.names.length > 1 ? `<div class="field"><label for="uSheet">시트</label><select id="uSheet">${U.names.map(n => `<option ${n===U.sheet?'selected':''}>${esc(n)}</option>`).join('')}</select></div>` : ''}
+      <div class="field"><label for="uHdr">머리글 행 번호</label><input type="number" id="uHdr" min="1" max="${aoa.length}" value="${U.hdr + 1}"></div>
+      ${['name','qty','code','exp','mfg','cat'].map(k => `<div class="field"><label for="uCol-${k}">${UP_LABEL[k]}${UP_OPT[k]?' <em>선택</em>':''}</label><select id="uCol-${k}" data-col="${k}">${colOpts(U.map[k])}</select></div>`).join('')}
+    </div>
+    ${U.map.exp < 0 && U.map.name >= 0 ? `<div class="note" style="margin-top:12px">소비기한 열이 없거나 날짜가 아니어서, 상품명 안의 [27.07.20] · (27.04.21) 표기를 소비기한으로 읽습니다.</div>` : ''}
+    ${extraQty.length ? `<div class="note w" style="margin-top:12px">수량으로 쓸 수 있는 열이 더 있습니다: ${esc(extraQty.join(', '))}. 지금 선택한 열이 맞는지 확인하세요.</div>` : ''}
+    <details class="raw"><summary>엑셀 앞부분 보기 (머리글 행 확인용)</summary><div class="tw" style="margin-top:8px"><table class="raw"><tbody>${rawRows}</tbody></table></div></details></div>`;
+  if (U.map.name < 0 || U.map.qty < 0) return {html: head + step2 + `<div class="note w">상품명 열과 수량 열을 선택하면 미리보기가 나타납니다.</div>` + undoCard, after: bindUpload};
+
+  const P = upPlan(U, O), c = P.cnt;
+  const optBase = `<option value="__skip">제외 (반영 안 함)</option><option value="__new">신규 품목으로 추가</option><optgroup label="기존 품목에 연결">${P.tpl.filter(r => sq(r.name)).map(r => `<option value="${esc(sq(r.name))}">${esc(r.name)}</option>`).join('')}</optgroup>`;
+  const KP = {chg:['p-info','변경'], same:['p-재고없음','동일'], new:['p-정상','신규'], skip:['p-미입력','제외']};
+  const rowHtml = x => {
+    const [pc, pl] = KP[x.kind], d = x.cur !== null && x.next !== null ? x.next - x.cur : null;
+    const flags = (x.auto === 'guess' && x.kind !== 'skip' ? ' <span class="flag">추정 연결 · 확인</span>' : '')
+      + (x.auto === 'dated' && x.kind !== 'skip' ? ' <span class="muted">· 소비기한 일치</span>' : '')
+      + (x.auto === 'ambig' ? ' <span class="flag">후보가 여러 개 · 직접 선택</span>' : '')
+      + (x.auto === 'learned' && x.kind !== 'skip' ? ' <span class="muted">· 기억한 코드</span>' : '')
+      + (x.dup ? ' <span class="flag">여러 상품이 한 품목에 연결 · 합산</span>' : '')
+      + (x.neg && x.kind !== 'skip' ? ` <span class="flag">마이너스 재고 ${fmt(x.raw)} → 0 반영</span>` : '');
+    return `<tr class="${x.kind==='skip'?'dim':''}"><td><span class="pill ${pc}">${pl}</span></td>
+      <td class="nm">${esc(x.a.name)}${x.a.rows>1?` <span class="muted">· ${x.a.rows}행 합산</span>`:''}${flags}</td>
+      <td><select class="cell" data-link="${esc(x.a.key)}" data-sel="${esc(x.t)}">${optBase}</select></td>
+      <td class="r num">${x.cur===null?'–':fmt(x.cur)}</td><td class="r num"><b>${x.kind==='skip'?fmt(x.a.qty):(x.next===null?'–':fmt(x.next))}</b></td>
+      <td class="r num delta">${d===null||d===0?'–':`${arrow(d)} ${fmt(Math.abs(d))}`}</td></tr>`;
+  };
+  const thead = `<thead><tr><th>상태</th><th>엑셀 상품명</th><th>반영 대상</th><th class="r">현재 ${O.field==='biz'?'사업단':'지브레인'}</th><th class="r">엑셀 수량</th><th class="r">증감</th></tr></thead>`;
+  const linked = P.items.filter(x => x.kind !== 'skip');
+  const skipped = P.items.filter(x => x.kind === 'skip').sort((a, b) => (b.a.qty !== 0) - (a.a.qty !== 0) || b.a.qty - a.a.qty);
+  const skipStock = skipped.filter(x => x.a.qty > 0).length;
+  const expOn = U.map.exp >= 0 || U.map.mfg >= 0 || P.items.some(x => x.a.nd);
+  const cats = [...new Set(S.master.map(p => p.cat).concat(S.cats).concat(['미분류']))];
+  const canApply = c.chg + c.same + c.new > 0;
+  const filled = P.exists ? P.tpl.filter(r => r[O.field] != null).length : 0;
+  const step3 = `<div class="card"><h2>3. 반영 미리보기</h2><p class="sub">${mLabel(O.month)}${P.exists?'':' (새로 만드는 월 탭)'} · ${fName}에 반영합니다. 오른쪽 연결 칸에서 품목을 바꾸거나 제외할 수 있습니다.</p>
+    <div class="bar" style="margin-bottom:12px"><span class="pill p-info">변경 ${c.chg}</span><span class="pill p-재고없음">동일 ${c.same}</span><span class="pill p-정상">신규 ${c.new}</span><span class="pill p-미입력">제외 ${c.skip}</span>${c.guess?`<span class="pill p-경고">추정 연결 ${c.guess}</span>`:''}${c.neg?`<span class="pill p-경고">마이너스→0 ${c.neg}</span>`:''}<span class="muted">엑셀 상품 ${P.total}종${P.bad?` · 수량을 읽지 못해 건너뛴 행 ${P.bad}`:''}</span></div>
+    ${P.exists && filled >= P.tpl.length * 0.5 && c.chg > 0 ? `<div class="note w" style="margin-bottom:12px">이미 재고가 입력된 월입니다. 반영하면 ${c.chg}개 품목의 ${fName} 값이 바뀝니다. (반영 후 되돌릴 수 있습니다)</div>` : ''}
+    ${c.guess ? `<div class="note w" style="margin-bottom:12px">이름이 비슷해서 연결했지만 소비기한으로는 확인되지 않은 상품이 ${c.guess}개('추정 연결') 있습니다. 반영 전에 연결이 맞는지 확인하세요. 반영하면 상품코드를 기억해 다음부터 자동으로 연결합니다.</div>` : ''}
+    ${c.neg ? `<div class="note" style="margin-bottom:12px">3PL 재고가 마이너스인 상품은 0으로 보정해 반영합니다. (사이트는 0 이상만 입력할 수 있습니다)</div>` : ''}
+    <div class="tw" style="max-height:520px"><table>${thead}<tbody>${linked.map(rowHtml).join('') || '<tr><td colspan="6" class="empty">월간 표와 연결된 상품이 없습니다. 아래 \'연결되지 않은 상품\'에서 직접 연결하세요.</td></tr>'}</tbody></table></div>
+    ${skipped.length ? `<details class="raw" ${linked.length ? '' : 'open'}><summary>연결되지 않은 상품 ${skipped.length}개${skipStock ? ` (재고가 있는 상품 ${skipStock}개)` : ''} — 같은 상품이면 연결하고, 새로 관리할 상품이면 '신규 품목으로 추가'를 고르세요</summary><div class="tw" style="margin-top:8px;max-height:420px"><table>${thead}<tbody>${skipped.map(rowHtml).join('')}</tbody></table></div></details>` : ''}
+    ${P.missing.length ? `<details class="raw"><summary>월간 표에는 있으나 엑셀과 연결되지 않은 품목 ${P.missing.length}개</summary><div class="tw" style="margin-top:8px"><table><tbody>${P.missing.map(r => `<tr><td>${esc(r.cat)}</td><td class="nm">${esc(r.name)}</td><td class="r num">${r[O.field]==null?'–':fmt(r[O.field])}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
+    <div class="fgrid" style="margin-top:16px">
+      <div class="field"><span class="lbl">연결되지 않은 월간 품목</span><label class="chk"><input type="checkbox" id="uZero" ${O.zero?'checked':''}>${fName}를 0으로 처리 (${P.zeroRows.length}개)</label></div>
+      ${expOn ? `<div class="field"><label for="uDates">소비기한·제조일자</label><select id="uDates"><option value="fill" ${O.dates==='fill'?'selected':''}>비어 있는 칸만 엑셀 값으로 채움</option><option value="overwrite" ${O.dates==='overwrite'?'selected':''}>엑셀 값으로 덮어씀</option><option value="none" ${O.dates==='none'?'selected':''}>건드리지 않음</option></select></div>` : ''}
+      ${c.new ? `<div class="field"><label for="uNewCat">신규 품목 구분</label><select id="uNewCat">${cats.map(x => `<option ${x===O.newCat?'selected':''}>${esc(x)}</option>`).join('')}</select></div>` : ''}
+    </div>
+    <div class="bar" style="margin:16px 0 0"><button class="btn pri" id="uApply" ${canApply?'':'disabled'}>이 내용으로 반영</button><button class="btn" id="uClear">파일 지우기</button></div></div>`;
+  return {html: head + step2 + step3 + undoCard, after: bindUpload};
+}
+function bindUpload(){
+  const U = UI.U, O = UI.UP, rerender = () => { const y = scrollY; render(); scrollTo(0, y); };
+  $('#uMonth').onchange = e => { O.month = e.target.value; if (U) U.links = {}; rerender(); };
+  $$('input[name=ufield]').forEach(r => r.onchange = () => { O.field = r.value; rerender(); });
+  $('#uFile').onchange = e => { const f = e.target.files[0]; if (f) loadUploadFile(f); };
+  const dz = $('#uDrop');
+  ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('on'); }));
+  ['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('on'); }));
+  dz.addEventListener('drop', e => { const f = e.dataTransfer && e.dataTransfer.files[0]; if (f) loadUploadFile(f); });
+  const sh = $('#uShow'); if (sh) sh.onclick = () => { UI.month = S.undo.month; saveUI(); setTab('month'); };
+  const ud = $('#uUndo'); if (ud) ud.onclick = undoUpload;
+  if (!U) return;
+  const keepOpen = () => { const o = $$('details.raw').map(d => d.open); return () => $$('details.raw').forEach((d, i) => { if (o[i] !== undefined) d.open = o[i]; }); };
+  const redo = () => { const restore = keepOpen(); rerender(); restore(); };
+  const sheet = $('#uSheet');
+  if (sheet) sheet.onchange = e => { U.sheet = e.target.value; const d = upDetect(upAoa(U)); U.hdr = d.hdr; U.map = d.map; U.links = {}; rerender(); };
+  $('#uHdr').onchange = e => { const h = Math.max(1, Math.min(upAoa(U).length, +e.target.value || 1)) - 1; U.hdr = h; U.map = upColsAt(upAoa(U), h); U.links = {}; rerender(); };
+  $$('[data-col]').forEach(s => s.onchange = () => { U.map[s.dataset.col] = +s.value; U.links = {}; rerender(); });
+  $$('[data-link]').forEach(s => { s.value = s.dataset.sel; s.onchange = () => { U.links[s.dataset.link] = s.value; redo(); }; });
+  const z = $('#uZero'); if (z) z.onchange = () => { O.zero = z.checked; redo(); };
+  const dt = $('#uDates'); if (dt) dt.onchange = () => { O.dates = dt.value; redo(); };
+  const nc = $('#uNewCat'); if (nc) nc.onchange = () => { O.newCat = nc.value; redo(); };
+  const ap = $('#uApply'); if (ap) ap.onclick = applyUpload;
+  $('#uClear').onclick = () => { UI.U = null; rerender(); };
+}
+
+/* ---------- 렌더 ---------- */
+const VIEWS = {live: viewLive, dash: viewDash, month: viewMonth, trend: viewTrend, entry: viewEntry, upload: viewUpload, master: viewMaster, check: viewCheck};
+function render(){
+  renderTabs(); renderConn(); hideTip();
+  const v = VIEWS[UI.tab]();
+  $('#view').innerHTML = `<div role="tabpanel" aria-labelledby="tab-${UI.tab}">${importBar()}${v.html}</div>`;
+  bindImportBar();
+  v.after && v.after();
+}
+function importBar(){ // 마지막 엑셀 반영 기준 시각 + 새 상품 확인
+  const L = S.lastImport;
+  if (!L || !['live','dash','month','trend'].includes(UI.tab)) return '';
+  const pend = SY.token || !SYNC.remote ? (L.pending || []) : [], sm = L.sum || {}; // 새 상품 확인은 저장 권한이 있는 곳에서만
+  const cats = [...new Set((S.cats || []).concat(['미분류']))];
+  const pendHtml = pend.length ? `<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px">
+      <div class="note w" style="margin-bottom:10px">월간 표에 없는 상품이 파일에 ${pend.length}개 있습니다. 관리할 상품만 체크해 추가하세요. 체크하지 않은 상품은 다음 업로드부터 묻지 않습니다.</div>
+      <div class="tw"><table><thead><tr><th style="width:36px"><span class="sr">추가</span></th><th>상품명</th><th>구분</th><th class="r">재고</th><th>소비기한</th></tr></thead><tbody>
+      ${pend.map((p, i) => `<tr><td><input type="checkbox" class="chk1" data-pend="${i}" aria-label="${esc(p.name)} 추가" checked></td><td class="nm">${esc(p.name)}</td>
+        <td><select class="cell" data-pcat="${i}">${cats.map(c => `<option ${c === (p.catSel || p.cat) ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></td>
+        <td class="r num">${fmt(p.qty)}</td><td class="num">${dot(p.exp)}</td></tr>`).join('')}</tbody></table></div>
+      <div class="bar" style="margin:10px 0 0"><button class="btn pri" id="pendAdd">체크한 상품 추가</button><button class="btn" id="pendNone">모두 추가 안 함</button></div></div>` : '';
+  return `<div class="card ibar" style="margin-bottom:16px"><div class="bar" style="margin:0">
+    <div style="min-width:0"><b>이지어드민 재고 ${dot(L.date)}${L.time ? ' ' + L.time : ''} 기준</b> <span class="muted">· ${mLabel(L.month)} ${L.field === 'biz' ? '사업단' : '지브레인'} 재고에 반영</span>
+      <p class="sub">${L.carry ? `${L.carry.field === 'biz' ? '사업단' : '지브레인'} 재고는 ${mLabel(L.carry.month)} 값을 이어받음 · ` : ''}변경 ${sm.chg || 0} · 동일 ${sm.same || 0}${sm.add ? ` · 신규 ${sm.add}` : ''}${sm.zero ? ` · 파일에 없어 0 처리 ${sm.zero}` : ''}${sm.neg ? ` · 마이너스→0 ${sm.neg}` : ''}${L.guess ? ` <span class="flag">이름이 달라 추정 연결 ${L.guess}</span>` : ''}${L.ambig ? ` <span class="flag">직접 선택 필요 ${L.ambig}</span>` : ''}</p></div>
+    <span class="sp"></span><button class="btn" data-tab="upload">연결 확인·수정</button></div>${pendHtml}</div>`;
+}
+function bindImportBar(){
+  const L = S.lastImport, a = $('#pendAdd'); if (!a || !L) return;
+  $$('[data-pcat]').forEach(s => s.onchange = () => { L.pending[+s.dataset.pcat].catSel = s.value; });
+  a.onclick = () => addPending(new Set($$('[data-pend]').filter(c => c.checked).map(c => +c.dataset.pend)));
+  $('#pendNone').onclick = () => addPending(new Set());
+}
+function setTab(t){ UI.tab = t; UI.confirm = ''; saveUI(); try { history.replaceState(null, '', '#' + t); } catch(e){} render(); scrollTo(0, 0); }
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-tab]'); if (t){ setTab(t.dataset.tab); return; }
+  const md = e.target.closest('[data-mode]'); if (md){ UI.mode = md.dataset.mode; saveUI(); render(); return; }
+  const so = e.target.closest('[data-sort]'); if (so){ const k = so.dataset.sort; UI.sort = {k, dir: UI.sort.k === k ? -UI.sort.dir : 1}; render(); return; }
+  const gs = e.target.closest('[data-go-status]'); if (gs){ UI.fSt = gs.dataset.goStatus; UI.fCat = ''; UI.q = ''; setTab('month'); return; }
+  const pr = e.target.closest('[data-prio]'); if (pr){ UI.prio = pr.dataset.prio; render(); return; }
+  const ed = e.target.closest('[data-edit]'); if (ed){ loadEntry(+ed.dataset.edit); UI.confirm = ''; setTab('entry'); return; }
+  const ld = e.target.closest('[data-load]'); if (ld){ loadEntry(+ld.dataset.load); UI.confirm = ''; render(); return; }
+  const fx = e.target.closest('[data-fix]'); if (fx){ const [m, id] = fx.dataset.fix.split('|'); UI.month = m; loadEntry(+id); saveUI(); setTab('entry'); return; }
+});
+document.addEventListener('change', e => {
+  const id = e.target.id;
+  if (id === 'selMonth'){ UI.month = e.target.value; UI.E = null; saveUI(); render(); }
+  else if (id === 'baseDate'){
+    const v = e.target.value, M = S.months[UI.month];
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v) && M){ const old = M.base; M.base = v; logAdd(UI.month, '-', '월 기준일 변경', `${dot(old)} → ${dot(v)}`); save(); render(); toast(`${mLabel(UI.month)} 기준일을 ${dot(v)}로 바꿨습니다`); }
+  }
+  else if (id === 'fCat'){ UI.fCat = e.target.value; render(); }
+  else if (id === 'fSt'){ UI.fSt = e.target.value; render(); }
+  else if (id === 'tCat'){ UI.tCat = e.target.value; UI.tKey = ''; render(); }
+  else if (id === 'tKey'){ UI.tKey = e.target.value; render(); }
+});
+document.addEventListener('input', e => {
+  if (e.target.id === 'fq'){ UI.q = e.target.value; const pos = e.target.selectionStart; render(); const f = $('#fq'); f.focus(); f.setSelectionRange(pos, pos); }
+});
+let rzT; let lastW = innerWidth;
+window.addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(() => { if (innerWidth !== lastW){ lastW = innerWidth; if ($('.chart')) render(); } }, 200); });
+window.addEventListener('hashchange', () => { const h = location.hash.replace('#',''); if (VIEWS[h] && h !== UI.tab){ UI.tab = h; render(); } });
+
+$('#qFile').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) quickUpload(f); };
+let dragN = 0;
+const isFileDrag = e => e.dataTransfer && [...(e.dataTransfer.types || [])].includes('Files');
+document.addEventListener('dragenter', e => { if (!isFileDrag(e) || UI.tab === 'upload') return; dragN++; document.body.classList.add('dragging'); });
+document.addEventListener('dragleave', e => { if (!isFileDrag(e)) return; if (--dragN <= 0){ dragN = 0; document.body.classList.remove('dragging'); } });
+document.addEventListener('dragover', e => { if (isFileDrag(e)) e.preventDefault(); });
+document.addEventListener('drop', e => {
+  dragN = 0; document.body.classList.remove('dragging');
+  if (!isFileDrag(e) || e.target.closest && e.target.closest('#uDrop')) return; // 업로드 탭의 상자는 자체 처리
+  e.preventDefault(); const f = e.dataTransfer.files[0]; if (!f) return;
+  if (UI.tab === 'upload') loadUploadFile(f); else quickUpload(f); // 업로드 탭에서는 미리보기부터
+});
+
+const migrated = migrate(S) | migrateCarry(); // 이전 버전 자료 보정 (모든 함수가 준비된 뒤)
+render();
+persist();
+if (migrated && SY.token){ SY.dirty = true; saveSync(); }
+syncPull();
+setInterval(() => { if (!document.hidden) syncPull(); }, 60000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) syncPull(); });
+</script>
